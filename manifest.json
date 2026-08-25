@@ -1,6 +1,6 @@
 {
-  "name": "YouTube cho bé",
-  "short_name": "YouTube Bé",
+  "name": "YouTube",
+  "short_name": "YouTube",
   "description": "Trang xem video an toàn, được phụ huynh chọn lọc cho bé",
   "id": "/index.html",
   "start_url": "./index.html",
