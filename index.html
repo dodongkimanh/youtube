@@ -233,9 +233,30 @@
     </div>
     <hr style="margin:18px 0;border:none;border-top:1px solid var(--border)">
     <div class="field">
-      <label>Danh sách kênh dùng chung cho mọi thiết bị</label>
+      <label>🔄 Đồng bộ kênh tự động cho mọi thiết bị (JSONBin.io)</label>
       <div class="hint">
-        Xuất file <code>shared-content.json</code> rồi tải lên đúng vị trí gốc của repo GitHub (kéo-thả qua trang web GitHub, không cần dòng lệnh) — mọi điện thoại/máy tính mở trang này sẽ tự thấy cùng một danh sách kênh, không cần nhập lại từng máy.
+        Thêm/xóa kênh trên máy này sẽ tự động gửi thẳng cho mọi thiết bị khác — không cần tải file hay vào GitHub nữa.
+        Cần tài khoản miễn phí: vào <b>jsonbin.io</b> → đăng ký → vào mục <b>API Keys</b> trong Dashboard → copy dòng <b>X-MASTER-KEY</b> → dán vào ô dưới đây.
+      </div>
+      <div class="field" style="margin-top:8px">
+        <label>Master Key (từ jsonbin.io)</label>
+        <input id="jsonbinKeyInput" placeholder="$2a$10$...">
+      </div>
+      <div class="field">
+        <label>Bin ID (để trống ở thiết bị đầu tiên — app sẽ tự tạo; các thiết bị sau dán đúng ID được cấp)</label>
+        <input id="jsonbinBinIdInput" placeholder="Tự tạo nếu để trống">
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <button class="btn primary" onclick="connectJsonbin()">🔗 Kết nối / Tạo đồng bộ</button>
+        <button class="btn" onclick="manualSyncNow()">🔄 Đồng bộ ngay</button>
+      </div>
+      <div id="jsonbinStatus" style="margin-top:6px;font-weight:600;font-size:13px"></div>
+    </div>
+    <hr style="margin:18px 0;border:none;border-top:1px solid var(--border)">
+    <div class="field">
+      <label>Cách thủ công cũ (không cần nếu đã dùng đồng bộ tự động ở trên)</label>
+      <div class="hint">
+        Xuất file <code>shared-content.json</code> rồi tải lên đúng vị trí gốc của repo GitHub (kéo-thả qua trang web GitHub, không cần dòng lệnh).
         <span id="sharedContentStatus" style="display:block;margin-top:4px;font-weight:600"></span>
       </div>
       <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
@@ -667,6 +688,9 @@ function applyManageUI(){
 function getApiKey(){ return localStorage.getItem('bt_apikey') || ''; }
 function openSettings(){
   document.getElementById('apiKeyInput').value = getApiKey();
+  document.getElementById('jsonbinKeyInput').value = getJsonbinKey();
+  document.getElementById('jsonbinBinIdInput').value = getJsonbinBinId();
+  updateJsonbinStatusUI();
   document.getElementById('sharedContentStatus').textContent = sharedContentActive
     ? '✅ Đang dùng danh sách kênh chung từ shared-content.json'
     : '⚠️ Chưa có shared-content.json — mỗi máy đang dùng danh sách kênh riêng.';
@@ -723,6 +747,95 @@ async function refreshSharedContent(){
   alert(ok ? 'Đã cập nhật danh sách kênh chung mới nhất.' : 'Chưa tìm thấy shared-content.json trên GitHub.');
 }
 
+// ---------- Live sync via JSONBin.io: adding a channel on one device pushes to a shared
+// JSON bin; every device fetches that bin on load, so no manual export/upload needed. ----------
+function getJsonbinKey(){ return localStorage.getItem('bt_jsonbin_key') || ''; }
+function getJsonbinBinId(){ return localStorage.getItem('bt_jsonbin_binid') || ''; }
+function jsonbinConfigured(){ return !!(getJsonbinKey() && getJsonbinBinId()); }
+async function jsonbinFetch(){
+  const key = getJsonbinKey(), binId = getJsonbinBinId();
+  if(!key || !binId) return false;
+  try{
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
+      headers: { 'X-Master-Key': key }
+    });
+    if(!res.ok) return false;
+    const data = await res.json();
+    const record = data.record;
+    if(!record || record.type !== 'kidtube-shared-content') return false;
+    if(Array.isArray(record.channels)){ channels = record.channels; save('bt_channels', channels); }
+    if(Array.isArray(record.videos)){ videos = record.videos; save('bt_videos', videos); }
+    sharedContentActive = true;
+    return true;
+  }catch(e){
+    return false;
+  }
+}
+async function jsonbinPush(){
+  const key = getJsonbinKey();
+  if(!key) return false;
+  let binId = getJsonbinBinId();
+  const payload = { type: 'kidtube-shared-content', version: 1, updatedAt: new Date().toISOString(), channels, videos };
+  try{
+    if(!binId){
+      const res = await fetch('https://api.jsonbin.io/v3/b', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': key, 'X-Bin-Name': 'youtube-be-shared-content' },
+        body: JSON.stringify(payload)
+      });
+      if(!res.ok) return false;
+      const data = await res.json();
+      binId = data.metadata.id;
+      localStorage.setItem('bt_jsonbin_binid', binId);
+    } else {
+      const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': key },
+        body: JSON.stringify(payload)
+      });
+      if(!res.ok) return false;
+    }
+    sharedContentActive = true;
+    return true;
+  }catch(e){
+    return false;
+  }
+}
+// Fire-and-forget push after a local channel/video edit — the UI already reflects the
+// change locally, this just best-effort propagates it to other devices in the background.
+function syncSharedContentIfConfigured(){
+  if(jsonbinConfigured()) jsonbinPush();
+}
+function updateJsonbinStatusUI(){
+  const el = document.getElementById('jsonbinStatus');
+  if(!el) return;
+  el.textContent = jsonbinConfigured()
+    ? `✅ Đang đồng bộ tự động (Bin ID: ${getJsonbinBinId()})`
+    : '⚠️ Chưa kết nối đồng bộ tự động.';
+}
+async function connectJsonbin(){
+  const key = document.getElementById('jsonbinKeyInput').value.trim();
+  if(!key){ alert('Vui lòng dán Master Key trước.'); return; }
+  localStorage.setItem('bt_jsonbin_key', key);
+  const typedBinId = document.getElementById('jsonbinBinIdInput').value.trim();
+  if(typedBinId) localStorage.setItem('bt_jsonbin_binid', typedBinId);
+  const ok = typedBinId ? await jsonbinFetch() : await jsonbinPush();
+  if(ok){
+    document.getElementById('jsonbinBinIdInput').value = getJsonbinBinId();
+    rebuildCombinedHome(); render(); loadHomeFeed(true);
+    alert('Kết nối thành công! Trên các thiết bị khác, dán đúng Master Key và Bin ID này (Bin ID: ' + getJsonbinBinId() + ') để cùng đồng bộ.');
+  } else {
+    alert('Không kết nối được. Kiểm tra lại Master Key / Bin ID rồi thử lại.');
+  }
+  updateJsonbinStatusUI();
+}
+async function manualSyncNow(){
+  const ok = jsonbinConfigured() ? await jsonbinFetch() : await loadSharedContent();
+  rebuildCombinedHome(); render(); loadHomeFeed(true);
+  updateJsonbinStatusUI();
+  alert(ok ? 'Đã đồng bộ danh sách kênh mới nhất.' : 'Chưa đồng bộ được — kiểm tra lại kết nối.');
+}
+
 // ---------- Export / import settings (move channels, videos, profiles & PIN to another device) ----------
 function exportSettings(){
   if(!manageMode){ alert('Cần mở khóa 🔒 Quản lý trước khi xuất cài đặt.'); return; }
@@ -730,7 +843,8 @@ function exportSettings(){
     type: 'kidtube-settings',
     version: 1,
     exportedAt: new Date().toISOString(),
-    pin, channels, videos, profiles
+    pin, channels, videos, profiles,
+    jsonbinKey: getJsonbinKey(), jsonbinBinId: getJsonbinBinId()
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -756,6 +870,8 @@ function importSettings(evt){
       if(Array.isArray(data.videos)){ videos = data.videos; save('bt_videos', videos); }
       if(Array.isArray(data.profiles) && data.profiles.length){ profiles = data.profiles; save('bt_profiles', profiles); }
       if(typeof data.pin === 'string' && data.pin){ pin = data.pin; localStorage.setItem('bt_pin', pin); }
+      if(typeof data.jsonbinKey === 'string' && data.jsonbinKey){ localStorage.setItem('bt_jsonbin_key', data.jsonbinKey); }
+      if(typeof data.jsonbinBinId === 'string' && data.jsonbinBinId){ localStorage.setItem('bt_jsonbin_binid', data.jsonbinBinId); }
       activeProfileId = null;
       localStorage.removeItem('bt_activeProfile');
       apiCache = {};
@@ -1193,10 +1309,12 @@ function saveVideo(){
   closeAddVideo();
   rebuildCombinedHome();
   render();
+  syncSharedContentIfConfigured();
 }
 function deleteVideo(idx){
   if(!confirm('Xóa video này khỏi danh sách của bé?')) return;
   videos.splice(idx,1); save('bt_videos', videos); rebuildCombinedHome(); render();
+  syncSharedContentIfConfigured();
 }
 
 // ---------- Add / Delete channel ----------
@@ -1215,10 +1333,12 @@ function saveChannel(){
   save('bt_channels', channels);
   closeAddChannel();
   loadHomeFeed(true);
+  syncSharedContentIfConfigured();
 }
 function deleteChannel(idx){
   if(!confirm('Xóa kênh này khỏi danh sách theo dõi?')) return;
   channels.splice(idx,1); save('bt_channels', channels); loadHomeFeed(true);
+  syncSharedContentIfConfigured();
 }
 
 // ---------- Player ----------
@@ -1273,7 +1393,8 @@ document.getElementById('searchInput').addEventListener('input', render);
   ensureProfiles();
   initActiveProfile();
   watchLog = loadWatchLog();
-  await loadSharedContent();
+  const gotFromJsonbin = jsonbinConfigured() ? await jsonbinFetch() : false;
+  if(!gotFromJsonbin) await loadSharedContent();
   rebuildCombinedHome();
   render();
   loadHomeFeed(false);
