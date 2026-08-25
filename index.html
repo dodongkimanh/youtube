@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>YouTube Bé - Xem an toàn cho bé</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f0f0f">
+<link rel="icon" href="icons/icon-192.png">
+
+<!-- iOS: lets Safari install this to the home screen as a standalone app -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="YouTube Bé">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+  :root{
+    --bg:#f5f5f5; --panel:#ffffff; --text:#0f0f0f; --sub:#606060;
+    --border:#e5e5e5; --chip:#f2f2f2; --chip-active:#0f0f0f; --chip-active-text:#fff;
+    --accent:#d92b2b; --accent-2:#2b7fd9;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:Roboto,Arial,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);}
+  header{position:sticky;top:0;z-index:20;background:var(--panel);border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:12px;padding:10px 16px;flex-wrap:wrap;row-gap:8px;}
+  .logo{display:flex;align-items:center;gap:6px;font-weight:700;font-size:20px;white-space:nowrap;}
+  .logo .play{width:26px;height:18px;background:var(--accent);border-radius:5px;display:flex;align-items:center;justify-content:center;}
+  .logo .play::after{content:"";border-left:8px solid #fff;border-top:5px solid transparent;border-bottom:5px solid transparent;margin-left:2px;}
+  .search{flex:1;max-width:600px;display:flex;}
+  .search input{flex:1;padding:8px 14px;border:1px solid var(--border);border-radius:20px 0 0 20px;outline:none;font-size:14px;}
+  .search button{border:1px solid var(--border);border-left:none;background:var(--chip);border-radius:0 20px 20px 0;padding:0 16px;cursor:pointer;}
+  .hdr-actions{display:flex;gap:8px;margin-left:auto;}
+  .btn{border:1px solid var(--border);background:var(--panel);border-radius:18px;padding:8px 14px;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap;}
+  .btn:hover{background:var(--chip);}
+  .btn.primary{background:var(--text);color:#fff;border-color:var(--text);}
+  .btn.locked{background:#fff3f3;border-color:#f3c8c8;color:var(--accent);}
+
+  .tabs{display:flex;gap:8px;padding:10px 16px;overflow-x:auto;background:var(--panel);border-bottom:1px solid var(--border);}
+  .tabs::-webkit-scrollbar{display:none;}
+  .chip{flex:0 0 auto;padding:7px 14px;border-radius:8px;background:var(--chip);font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;}
+  .chip.active{background:var(--chip-active);color:var(--chip-active-text);}
+
+  .layout{display:flex;max-width:1400px;margin:0 auto;}
+  aside{width:230px;flex:0 0 230px;padding:16px 8px;border-right:1px solid var(--border);min-height:70vh;}
+  aside h3{font-size:13px;color:var(--sub);text-transform:uppercase;letter-spacing:.04em;padding:0 8px;margin:4px 0 10px;}
+  .channel-row{display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;cursor:pointer;}
+  .channel-row:hover{background:var(--chip);}
+  .channel-row.active{background:var(--chip);font-weight:600;}
+  .avatar{width:32px;height:32px;border-radius:50%;background:var(--accent-2);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex:0 0 32px;}
+  .channel-name{flex:1;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .icon-btn{background:none;border:none;cursor:pointer;color:var(--sub);padding:4px;font-size:14px;border-radius:50%;}
+  .icon-btn:hover{background:#e8e8e8;}
+  .add-channel-row{display:flex;align-items:center;gap:8px;padding:8px;color:var(--accent-2);cursor:pointer;font-size:14px;}
+
+  main{flex:1;padding:18px;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:22px 14px;}
+  .card{cursor:pointer;position:relative;}
+  .thumb-wrap{position:relative;border-radius:12px;overflow:hidden;background:#000;aspect-ratio:16/9;}
+  .thumb-wrap img{width:100%;height:100%;object-fit:cover;display:block;}
+  .card-info{display:flex;gap:10px;margin-top:8px;}
+  .card-info .avatar{width:36px;height:36px;flex:0 0 36px;}
+  .card-title{font-size:14px;font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .card-channel{font-size:13px;color:var(--sub);margin-top:3px;}
+  .card-cat{display:inline-block;margin-top:3px;font-size:11px;color:var(--accent-2);}
+  .card-stats{font-size:12px;color:var(--sub);margin-top:1px;}
+  .card-del{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.65);color:#fff;border:none;border-radius:50%;width:26px;height:26px;cursor:pointer;font-size:14px;}
+
+  .empty{text-align:center;padding:60px 20px;color:var(--sub);}
+  .empty .big{font-size:44px;margin-bottom:10px;}
+
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;}
+  .modal{background:var(--panel);border-radius:12px;max-width:480px;width:100%;padding:20px;max-height:90vh;overflow:auto;}
+  .modal h2{margin-top:0;font-size:18px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:13px;color:var(--sub);margin-bottom:5px;}
+  .field input,.field select{width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
+  .hint{font-size:12px;color:var(--sub);margin-top:4px;}
+
+  .player-overlay{position:fixed;inset:0;background:#0f0f0f;z-index:60;overflow:auto;}
+  .player-top{display:flex;align-items:center;gap:12px;padding:12px 16px;color:#fff;}
+  .player-top button{background:none;border:none;color:#fff;font-size:20px;cursor:pointer;}
+  .player-wrap{max-width:960px;margin:0 auto;padding:0 16px;}
+  .player-frame{aspect-ratio:16/9;background:#000;border-radius:8px;overflow:hidden;}
+  .player-frame iframe{width:100%;height:100%;border:0;}
+  .player-title{color:#fff;font-size:18px;font-weight:600;margin:14px 0 4px;}
+  .player-channel{color:#aaa;font-size:14px;margin-bottom:20px;}
+  .player-list{color:#fff;}
+  .player-list h4{color:#aaa;font-weight:500;font-size:13px;text-transform:uppercase;margin-bottom:10px;}
+  .plist-item{display:flex;gap:10px;padding:8px 0;cursor:pointer;border-radius:8px;}
+  .plist-item:hover{background:#1f1f1f;}
+  .plist-item img{width:110px;aspect-ratio:16/9;object-fit:cover;border-radius:6px;flex:0 0 110px;}
+  .plist-item .t{font-size:13px;font-weight:600;line-height:1.3;}
+  .plist-item .c{font-size:12px;color:#aaa;margin-top:4px;}
+
+  .pl-badge{position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.75);color:#fff;font-size:12px;padding:2px 7px;border-radius:4px;font-weight:600;}
+
+  .channel-overlay{position:fixed;inset:0;background:var(--bg);z-index:55;overflow:auto;}
+  .ch-top{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--border);position:sticky;top:0;}
+  .ch-top button{background:none;border:none;font-size:20px;cursor:pointer;}
+  .ch-wrap{max-width:1100px;margin:0 auto;padding:18px;}
+  .ch-header{display:flex;align-items:center;gap:16px;margin-bottom:16px;}
+  .ch-avatar{width:64px;height:64px;border-radius:50%;object-fit:cover;background:#ccc;}
+  .ch-name{font-size:20px;font-weight:700;}
+  .ch-meta{font-size:13px;color:var(--sub);margin-top:4px;}
+  .ch-tabs{display:flex;gap:8px;border-bottom:1px solid var(--border);margin-bottom:16px;padding-bottom:10px;}
+
+  .bottomnav{display:none;}
+  @media (max-width:820px){
+    aside{display:none;}
+    .search{display:none;}
+    .bottomnav{display:flex;position:sticky;bottom:0;background:var(--panel);border-top:1px solid var(--border);z-index:20;}
+    .bottomnav button{flex:1;background:none;border:none;padding:8px 0;font-size:11px;color:var(--sub);display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;}
+    .bottomnav button.active{color:var(--text);font-weight:600;}
+    .bottomnav .bn-icon{font-size:20px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo" onclick="goHome()" style="cursor:pointer"><span class="play"></span>YouTube</div>
+  <div class="search">
+    <input id="searchInput" type="text" placeholder="Tìm trong video đã chọn cho bé...">
+    <button onclick="render()">🔍</button>
+  </div>
+  <div class="hdr-actions">
+    <button class="btn" id="profileChip" onclick="openProfilePickerManual()" title="Đổi bé đang xem">🙂 Bé</button>
+    <button class="btn" id="timeBadge" onclick="onTimeBadgeClick()" title="Thời gian xem hôm nay">⏱ --:--</button>
+    <button class="btn" id="addVideoBtn" style="display:none" onclick="openAddVideo()">+ Thêm video</button>
+    <button class="btn" id="apiSettingsBtn" style="display:none" onclick="openSettings()">⚙️ API</button>
+    <button class="btn" id="lockBtn" onclick="toggleManage()">🔒 Quản lý</button>
+  </div>
+</header>
+
+<div class="tabs" id="tabs"></div>
+
+<div class="layout">
+  <aside>
+    <h3>Kênh đã theo dõi</h3>
+    <div id="channelList"></div>
+    <div class="add-channel-row" id="addChannelRow" style="display:none" onclick="openAddChannel()">➕ Thêm kênh</div>
+  </aside>
+  <main>
+    <div class="grid" id="grid"></div>
+    <div class="empty" id="homeLoading" style="display:none"><div class="big">⏳</div><p>Đang tải video từ các kênh...</p></div>
+    <div class="empty" id="emptyState" style="display:none">
+      <div class="big">📺</div>
+      <p>Chưa có video nào trong danh sách của bé.</p>
+      <p>Bấm <b>"🔒 Quản lý"</b> rồi <b>"+ Thêm video"</b> để dán link YouTube bạn đã kiểm tra và cho phép bé xem.</p>
+    </div>
+  </main>
+</div>
+
+<div class="bottomnav">
+  <button class="active" onclick="goHome()"><span class="bn-icon">🏠</span>Trang chủ</button>
+  <button onclick="document.querySelector('aside').style.display='block'"><span class="bn-icon">📡</span>Kênh</button>
+  <button onclick="onTimeBadgeClick()"><span class="bn-icon">⏱️</span><span id="timeBadgeMobile">Thời gian</span></button>
+  <button onclick="toggleManage()"><span class="bn-icon">🔒</span>Quản lý</button>
+</div>
+
+<!-- Add / Edit Video Modal -->
+<div class="overlay" id="addVideoModal" style="display:none">
+  <div class="modal">
+    <h2>Thêm video cho bé</h2>
+    <div class="field">
+      <label>Link video YouTube (đã xem trước, an toàn cho bé)</label>
+      <input id="fVideoUrl" placeholder="https://www.youtube.com/watch?v=..." oninput="fillThumbPreview()">
+      <div class="hint">Hỗ trợ link youtube.com/watch?v=..., youtu.be/..., hoặc /shorts/...</div>
+    </div>
+    <div class="field">
+      <label>Xem trước thumbnail</label>
+      <div class="thumb-wrap" style="max-width:220px"><img id="thumbPreview" src="" style="display:none"></div>
+    </div>
+    <div class="field">
+      <label>Tiêu đề video</label>
+      <input id="fTitle" placeholder="Ví dụ: Bài hát Đàn Vịt Con">
+    </div>
+    <div class="field">
+      <label>Tên kênh</label>
+      <input id="fChannel" list="channelOptions" placeholder="Ví dụ: ChuChu TV Tiếng Việt">
+      <datalist id="channelOptions"></datalist>
+    </div>
+    <div class="field">
+      <label>Danh mục</label>
+      <input id="fCategory" list="categoryOptions" placeholder="Ví dụ: Âm nhạc thiếu nhi">
+      <datalist id="categoryOptions"></datalist>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeAddVideo()">Hủy</button>
+      <button class="btn primary" onclick="saveVideo()">Lưu video</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Channel Modal -->
+<div class="overlay" id="addChannelModal" style="display:none">
+  <div class="modal">
+    <h2>Thêm kênh theo dõi</h2>
+    <div class="field">
+      <label>Link hoặc @handle kênh YouTube thật</label>
+      <input id="cUrl" placeholder="https://www.youtube.com/@... hoặc @TenKenh">
+      <div class="hint">Hệ thống sẽ tự lấy tên, ảnh đại diện và danh sách video/danh sách phát thật của kênh. Cần có API Key (bấm ⚙️ API ở trên nếu chưa có).</div>
+    </div>
+    <div id="cPreview" style="display:none;align-items:center;gap:10px;margin:10px 0;padding:10px;background:var(--chip);border-radius:8px;">
+      <img id="cPreviewAvatar" style="width:44px;height:44px;border-radius:50%;object-fit:cover;">
+      <div>
+        <div id="cPreviewName" style="font-weight:600;font-size:14px;"></div>
+        <div id="cPreviewMeta" style="font-size:12px;color:var(--sub);"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeAddChannel()">Hủy</button>
+      <button class="btn" onclick="lookupChannel()">Tìm kênh</button>
+      <button class="btn primary" id="saveChannelBtn" style="display:none" onclick="saveChannel()">Lưu kênh</button>
+    </div>
+  </div>
+</div>
+
+<!-- API Settings Modal -->
+<div class="overlay" id="settingsModal" style="display:none">
+  <div class="modal">
+    <h2>Cài đặt YouTube Data API</h2>
+    <div class="field">
+      <label>YouTube Data API v3 Key</label>
+      <input id="apiKeyInput" placeholder="AIza...">
+      <div class="hint">Lấy miễn phí: vào Google Cloud Console → tạo dự án → bật "YouTube Data API v3" → tạo Credentials &gt; API key → dán vào đây. Key chỉ lưu trên máy bạn (localStorage), không gửi đi đâu ngoài Google.</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeSettings()">Đóng</button>
+      <button class="btn primary" onclick="saveSettings()">Lưu key</button>
+    </div>
+  </div>
+</div>
+
+<!-- Channel View -->
+<div class="channel-overlay" id="channelOverlay" style="display:none">
+  <div class="ch-top">
+    <button onclick="closeChannelView()">←</button>
+    <div class="logo" onclick="goHome()" style="cursor:pointer"><span class="play"></span>YouTube</div>
+  </div>
+  <div class="ch-wrap">
+    <div class="ch-header">
+      <img id="chAvatar" class="ch-avatar">
+      <div>
+        <div id="chName" class="ch-name"></div>
+        <div id="chMeta" class="ch-meta"></div>
+      </div>
+    </div>
+    <div class="ch-tabs">
+      <div class="chip active" id="chTabVideos" onclick="switchChTab('videos')">Video</div>
+      <div class="chip" id="chTabPlaylists" onclick="switchChTab('playlists')">Danh sách phát</div>
+    </div>
+    <div id="chBackRow" style="display:none;margin-bottom:14px">
+      <button class="btn" onclick="showPlaylistsTab()">← Danh sách phát</button>
+    </div>
+    <div class="grid" id="chGrid"></div>
+    <div class="empty" id="chLoading" style="display:none"><div class="big">⏳</div><p>Đang tải...</p></div>
+    <div class="empty" id="chError" style="display:none"></div>
+  </div>
+</div>
+
+<!-- Profile Manage Modal (per-child daily time limit) -->
+<div class="overlay" id="profileModal" style="display:none">
+  <div class="modal" style="max-width:540px">
+    <h2>Hồ sơ các bé &amp; giờ xem mỗi ngày</h2>
+    <div class="hint" style="margin-bottom:10px">Mỗi bé một hồ sơ riêng, với giới hạn phút xem/ngày riêng. Để trống hoặc 0 phút = không giới hạn.</div>
+    <div id="profileManageList"></div>
+    <div class="add-channel-row" onclick="addProfileRow()">➕ Thêm hồ sơ bé</div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeProfileModal()">Đóng</button>
+      <button class="btn primary" onclick="saveProfiles()">Lưu tất cả</button>
+    </div>
+  </div>
+</div>
+
+<!-- "Who's watching" profile picker -->
+<div class="channel-overlay" id="profilePicker" style="display:none;z-index:58">
+  <div class="ch-wrap" style="max-width:640px;text-align:center;padding-top:60px">
+    <div class="logo" style="justify-content:center;margin-bottom:24px"><span class="play"></span>YouTube</div>
+    <h2 style="margin-bottom:24px">Bé nào đang xem?</h2>
+    <div id="profileGrid" style="display:flex;flex-wrap:wrap;gap:22px;justify-content:center"></div>
+    <button class="btn" style="margin-top:32px" onclick="openProfileModalFromPicker()">➕ Thêm / quản lý hồ sơ bé (cần mã PIN)</button>
+  </div>
+</div>
+
+<!-- Time's Up Modal -->
+<div class="overlay" id="timeUpModal" style="display:none">
+  <div class="modal" style="text-align:center">
+    <div style="font-size:48px;margin-bottom:8px">⏰</div>
+    <h2>Bạn đã hết thời gian xem trong ngày</h2>
+    <p class="hint" style="font-size:14px">Hẹn gặp lại bé vào ngày mai nhé!</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn primary" onclick="closeTimeUpModal()">Đã hiểu</button>
+    </div>
+  </div>
+</div>
+
+<!-- PIN Modal -->
+<div class="overlay" id="pinModal" style="display:none">
+  <div class="modal">
+    <h2 id="pinTitle">Nhập mã PIN quản lý</h2>
+    <div class="field">
+      <input id="pinInput" type="password" inputmode="numeric" placeholder="Mã PIN">
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="cancelPin()">Hủy</button>
+      <button class="btn primary" onclick="submitPin()">Xác nhận</button>
+    </div>
+  </div>
+</div>
+
+<!-- Player -->
+<div class="player-overlay" id="playerOverlay" style="display:none">
+  <div class="player-top">
+    <button onclick="closePlayer()">←</button>
+    <div class="logo" style="color:#fff;cursor:pointer" onclick="goHome()"><span class="play"></span>YouTube</div>
+    <button style="margin-left:auto" onclick="enterFullscreen()" title="Toàn màn hình">⛶</button>
+  </div>
+  <div class="player-wrap">
+    <div class="player-frame"><iframe id="playerFrame" src="" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen></iframe></div>
+    <div class="player-title" id="playerTitle"></div>
+    <div class="player-channel" id="playerChannel"></div>
+    <div class="player-list">
+      <h4>Video khác trong danh sách của bé</h4>
+      <div id="playerList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------- Data ----------
+const DEFAULT_VIDEOS = []; // start empty on purpose: only real, parent-approved links get added
+const DEFAULT_CHANNELS = []; // parent adds real channel links themselves
+
+function load(key, fallback){
+  try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }catch(e){ return fallback; }
+}
+function save(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+
+let videos = load('bt_videos', DEFAULT_VIDEOS);
+let channels = load('bt_channels', DEFAULT_CHANNELS);
+let pin = localStorage.getItem('bt_pin') || '';
+let manageMode = false;
+let activeChannel = null;
+let activeCategory = 'Tất cả';
+
+// ---------- Helpers ----------
+function extractVideoId(url){
+  if(!url) return null;
+  url = url.trim();
+  let m = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/); if(m) return m[1];
+  m = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/); if(m) return m[1];
+  m = url.match(/\/shorts\/([a-zA-Z0-9_-]{11})/); if(m) return m[1];
+  m = url.match(/\/embed\/([a-zA-Z0-9_-]{11})/); if(m) return m[1];
+  if(/^[a-zA-Z0-9_-]{11}$/.test(url)) return url;
+  return null;
+}
+function thumbUrl(id){ return `https://i.ytimg.com/vi/${id}/hqdefault.jpg`; }
+function initials(name){ return (name||'?').trim().charAt(0).toUpperCase(); }
+function shuffleArray(arr){
+  const a = arr.slice();
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function formatDuration(iso){
+  const m = (iso || '').match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if(!m) return '';
+  const h = parseInt(m[1] || 0, 10), mi = parseInt(m[2] || 0, 10), s = parseInt(m[3] || 0, 10);
+  const pad = n => String(n).padStart(2, '0');
+  return h > 0 ? `${h}:${pad(mi)}:${pad(s)}` : `${mi}:${pad(s)}`;
+}
+function formatViews(n){
+  n = Number(n) || 0;
+  if(n >= 1000000) return (n/1000000).toFixed(1).replace('.0','') + ' Tr lượt xem';
+  if(n >= 1000) return (n/1000).toFixed(1).replace('.0','') + ' N lượt xem';
+  return n + ' lượt xem';
+}
+function formatAgo(iso){
+  if(!iso) return '';
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const day = 86400000;
+  const days = Math.floor(diffMs / day);
+  if(days < 1) return 'hôm nay';
+  if(days < 30) return days + ' ngày trước';
+  const months = Math.floor(days / 30);
+  if(months < 12) return months + ' tháng trước';
+  return Math.floor(months / 12) + ' năm trước';
+}
+
+// ---------- Child profiles (each with its own daily watch-time limit) ----------
+const AVATAR_CHOICES = ['🙂','🦁','🐰','🐻','🐼','🦊','🐨','🐸','🐵','🦄','🐳','🌟'];
+let profiles = load('bt_profiles', []);
+let activeProfileId = localStorage.getItem('bt_activeProfile') || null;
+
+function ensureProfiles(){
+  if(profiles.length) return;
+  // first run on this device, or upgrading from the old single-limit version: seed one default profile
+  const legacyLimit = localStorage.getItem('bt_timelimit');
+  const legacyLog = load('bt_watchlog', null);
+  const id = 'p_' + Date.now();
+  profiles = [{ id, name: 'Bé', avatar: '🙂', dailyLimitMinutes: legacyLimit ? Number(legacyLimit) : null }];
+  save('bt_profiles', profiles);
+  if(legacyLog && legacyLog.date === todayKey()){ save(`bt_watchlog_${id}`, legacyLog); }
+}
+function initActiveProfile(){
+  if(activeProfileId && profiles.find(p => p.id === activeProfileId)) return;
+  if(profiles.length === 1){
+    activeProfileId = profiles[0].id;
+    localStorage.setItem('bt_activeProfile', activeProfileId);
+  } else {
+    activeProfileId = null;
+  }
+}
+function getActiveProfile(){ return profiles.find(p => p.id === activeProfileId) || null; }
+function updateProfileChip(){
+  const chip = document.getElementById('profileChip');
+  if(!chip) return;
+  const prof = getActiveProfile();
+  chip.textContent = prof ? `${prof.avatar || '🙂'} ${prof.name}` : '👤 Chọn bé';
+}
+function renderProfilePicker(){
+  const grid = document.getElementById('profileGrid');
+  grid.innerHTML = '';
+  profiles.forEach(p => {
+    const el = document.createElement('div');
+    el.style.cssText = 'cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;width:100px';
+    el.innerHTML = `<div style="width:80px;height:80px;border-radius:50%;background:var(--chip);display:flex;align-items:center;justify-content:center;font-size:40px;">${p.avatar || '🙂'}</div><div style="font-size:14px;font-weight:600">${escapeHtml(p.name)}</div>`;
+    el.onclick = () => selectProfile(p.id);
+    grid.appendChild(el);
+  });
+}
+function selectProfile(id){
+  activeProfileId = id;
+  localStorage.setItem('bt_activeProfile', id);
+  document.getElementById('profilePicker').style.display = 'none';
+  watchLog = loadWatchLog();
+  updateProfileChip();
+  goHome();
+}
+function openProfilePickerManual(){
+  renderProfilePicker();
+  document.getElementById('profilePicker').style.display = 'block';
+}
+let pendingManageAction = null;
+function runPendingManageAction(){
+  if(pendingManageAction){ const fn = pendingManageAction; pendingManageAction = null; fn(); }
+}
+function openProfileModalFromPicker(){
+  document.getElementById('profilePicker').style.display = 'none';
+  if(manageMode){ openProfileModal(); return; }
+  pendingManageAction = () => openProfileModal();
+  toggleManage();
+}
+function renderProfileManageList(){
+  const wrap = document.getElementById('profileManageList');
+  wrap.innerHTML = '';
+  profiles.forEach((p, idx) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);';
+    row.innerHTML = `
+      <select data-f="avatar" style="width:56px;font-size:20px;padding:4px;border:1px solid var(--border);border-radius:6px;">
+        ${AVATAR_CHOICES.map(a => `<option value="${a}" ${a === p.avatar ? 'selected' : ''}>${a}</option>`).join('')}
+      </select>
+      <input data-f="name" value="${escapeHtml(p.name)}" style="flex:1;min-width:0;padding:6px 8px;border:1px solid var(--border);border-radius:6px;" placeholder="Tên bé">
+      <input data-f="limit" type="number" min="0" value="${p.dailyLimitMinutes || ''}" placeholder="phút/ngày" style="width:90px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;">
+      <button type="button" class="icon-btn" title="Đặt lại giờ hôm nay" data-act="reset">↺</button>
+      ${profiles.length > 1 ? `<button type="button" class="icon-btn" title="Xóa hồ sơ" data-act="del">✕</button>` : ''}
+    `;
+    row.querySelector('[data-act="reset"]').onclick = () => {
+      save(`bt_watchlog_${p.id}`, { date: todayKey(), usedSeconds: 0 });
+      if(activeProfileId === p.id){ watchLog = loadWatchLog(); updateTimeBadge(); }
+      alert(`Đã đặt lại giờ hôm nay cho ${p.name}.`);
+    };
+    const delBtn = row.querySelector('[data-act="del"]');
+    if(delBtn){
+      delBtn.onclick = () => {
+        if(!confirm(`Xóa hồ sơ "${p.name}"?`)) return;
+        profiles.splice(idx, 1);
+        save('bt_profiles', profiles);
+        if(activeProfileId === p.id){ activeProfileId = null; localStorage.removeItem('bt_activeProfile'); initActiveProfile(); }
+        renderProfileManageList();
+        updateProfileChip(); updateTimeBadge();
+      };
+    }
+    wrap.appendChild(row);
+  });
+}
+function addProfileRow(){
+  const id = 'p_' + Date.now();
+  profiles.push({ id, name: `Bé ${profiles.length + 1}`, avatar: AVATAR_CHOICES[profiles.length % AVATAR_CHOICES.length], dailyLimitMinutes: null });
+  save('bt_profiles', profiles);
+  renderProfileManageList();
+}
+function openProfileModal(){
+  renderProfileManageList();
+  document.getElementById('profileModal').style.display = 'flex';
+}
+function closeProfileModal(){
+  document.getElementById('profileModal').style.display = 'none';
+  if(!getActiveProfile()){
+    renderProfilePicker();
+    document.getElementById('profilePicker').style.display = 'block';
+  }
+}
+function saveProfiles(){
+  const rows = document.querySelectorAll('#profileManageList > div');
+  rows.forEach((row, idx) => {
+    if(!profiles[idx]) return;
+    const avatar = row.querySelector('[data-f="avatar"]').value;
+    const name = row.querySelector('[data-f="name"]').value.trim() || `Bé ${idx + 1}`;
+    const limitRaw = row.querySelector('[data-f="limit"]').value.trim();
+    profiles[idx].avatar = avatar;
+    profiles[idx].name = name;
+    profiles[idx].dailyLimitMinutes = (limitRaw === '' || Number(limitRaw) <= 0) ? null : Math.floor(Number(limitRaw));
+  });
+  save('bt_profiles', profiles);
+  closeProfileModal();
+  updateProfileChip();
+  updateTimeBadge();
+}
+
+// ---------- Daily watch time limit (per active profile) ----------
+function todayKey(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function watchLogKey(){
+  const prof = getActiveProfile();
+  return prof ? `bt_watchlog_${prof.id}` : 'bt_watchlog';
+}
+function loadWatchLog(){
+  let log = load(watchLogKey(), null);
+  if(!log || log.date !== todayKey()){ log = { date: todayKey(), usedSeconds: 0 }; save(watchLogKey(), log); }
+  return log;
+}
+let watchLog = { date: todayKey(), usedSeconds: 0 };
+function getDailyLimitMinutes(){
+  const prof = getActiveProfile();
+  if(!prof) return null;
+  return (prof.dailyLimitMinutes && prof.dailyLimitMinutes > 0) ? prof.dailyLimitMinutes : null;
+}
+function remainingSeconds(){
+  const limit = getDailyLimitMinutes();
+  if(limit == null) return null;
+  return Math.max(0, limit * 60 - watchLog.usedSeconds);
+}
+function isTimeUp(){
+  if(!getActiveProfile()) return false;
+  const limit = getDailyLimitMinutes();
+  if(limit == null) return false;
+  return watchLog.usedSeconds >= limit * 60;
+}
+function updateTimeBadge(){
+  watchLog = loadWatchLog();
+  const limit = getDailyLimitMinutes();
+  const badge = document.getElementById('timeBadge');
+  const badgeMobile = document.getElementById('timeBadgeMobile');
+  if(limit == null){
+    if(badge) badge.textContent = '⏱ Không giới hạn';
+    if(badgeMobile) badgeMobile.textContent = 'Thời gian';
+    return;
+  }
+  const rem = remainingSeconds();
+  const mm = Math.floor(rem / 60), ss = rem % 60;
+  if(badge) badge.textContent = `⏱ ${mm}:${String(ss).padStart(2,'0')}`;
+  if(badgeMobile) badgeMobile.textContent = `${mm} phút`;
+}
+function onTimeBadgeClick(){
+  if(manageMode) openProfileModal();
+}
+function showTimeUpModal(){ document.getElementById('timeUpModal').style.display = 'flex'; }
+function closeTimeUpModal(){ document.getElementById('timeUpModal').style.display = 'none'; }
+
+let watchTimerId = null;
+function startWatchTimer(){
+  if(watchTimerId) return;
+  watchLog = loadWatchLog();
+  watchTimerId = setInterval(() => {
+    watchLog = loadWatchLog();
+    watchLog.usedSeconds += 1;
+    save(watchLogKey(), watchLog);
+    updateTimeBadge();
+    if(isTimeUp()){
+      stopWatchTimer();
+      closePlayer();
+      showTimeUpModal();
+    }
+  }, 1000);
+}
+function stopWatchTimer(){
+  if(watchTimerId){ clearInterval(watchTimerId); watchTimerId = null; }
+}
+
+// ---------- Manage mode / PIN ----------
+function toggleManage(){
+  if(manageMode){ manageMode = false; applyManageUI(); return; }
+  if(!pin){
+    document.getElementById('pinTitle').textContent = 'Đặt mã PIN quản lý (chỉ hỏi lần đầu)';
+    document.getElementById('pinInput').value = '';
+    document.getElementById('pinModal').style.display = 'flex';
+    document.getElementById('pinModal').dataset.mode = 'set';
+  } else {
+    document.getElementById('pinTitle').textContent = 'Nhập mã PIN quản lý';
+    document.getElementById('pinInput').value = '';
+    document.getElementById('pinModal').style.display = 'flex';
+    document.getElementById('pinModal').dataset.mode = 'check';
+  }
+}
+function closePin(){ document.getElementById('pinModal').style.display = 'none'; }
+function cancelPin(){
+  closePin();
+  if(pendingManageAction){
+    pendingManageAction = null;
+    if(!getActiveProfile()){ renderProfilePicker(); document.getElementById('profilePicker').style.display = 'block'; }
+  }
+}
+function submitPin(){
+  const val = document.getElementById('pinInput').value.trim();
+  const mode = document.getElementById('pinModal').dataset.mode;
+  if(mode === 'set'){
+    if(val.length < 4){ alert('Vui lòng nhập PIN từ 4 số trở lên.'); return; }
+    pin = val; localStorage.setItem('bt_pin', pin);
+    manageMode = true; applyManageUI(); closePin();
+    runPendingManageAction();
+  } else {
+    if(val === pin){ manageMode = true; applyManageUI(); closePin(); runPendingManageAction(); }
+    else alert('Sai PIN.');
+  }
+}
+function applyManageUI(){
+  document.getElementById('addVideoBtn').style.display = manageMode ? 'flex' : 'none';
+  document.getElementById('addChannelRow').style.display = manageMode ? 'flex' : 'none';
+  document.getElementById('apiSettingsBtn').style.display = manageMode ? 'flex' : 'none';
+  document.getElementById('lockBtn').textContent = manageMode ? '🔓 Đang quản lý' : '🔒 Quản lý';
+  document.getElementById('lockBtn').classList.toggle('locked', manageMode);
+  render();
+}
+
+// ---------- YouTube Data API ----------
+function getApiKey(){ return localStorage.getItem('bt_apikey') || ''; }
+function openSettings(){
+  document.getElementById('apiKeyInput').value = getApiKey();
+  document.getElementById('settingsModal').style.display = 'flex';
+}
+function closeSettings(){ document.getElementById('settingsModal').style.display = 'none'; }
+function saveSettings(){
+  const k = document.getElementById('apiKeyInput').value.trim();
+  localStorage.setItem('bt_apikey', k);
+  closeSettings();
+}
+async function ytApi(endpoint, params){
+  const key = getApiKey();
+  if(!key){ throw new Error('NO_KEY'); }
+  const qs = new URLSearchParams(Object.assign({}, params, { key }));
+  const res = await fetch(`https://www.googleapis.com/youtube/v3/${endpoint}?${qs.toString()}`);
+  const data = await res.json();
+  if(!res.ok){ throw new Error((data.error && data.error.message) ? data.error.message : 'Lỗi API không xác định'); }
+  return data;
+}
+function formatCount(n){
+  n = Number(n) || 0;
+  if(n >= 1000000) return (n/1000000).toFixed(1).replace('.0','') + ' Tr';
+  if(n >= 1000) return (n/1000).toFixed(1).replace('.0','') + ' N';
+  return String(n);
+}
+function thumbFromSnippet(snip){
+  const t = (snip && snip.thumbnails) || {};
+  return ((t.medium || t.high || t.default || {}).url) || '';
+}
+// Some channels (TV networks, licensed shows) disable embedding — that video would show
+// a "Watch on YouTube" fallback with a play button that does nothing. We drop those here
+// so a video only ever appears if it can actually play inside this page.
+async function filterEmbeddable(items){
+  const ids = items.map(v => v.id);
+  const statsMap = {};
+  for(let i = 0; i < ids.length; i += 50){
+    const batch = ids.slice(i, i + 50);
+    if(!batch.length) continue;
+    try{
+      const data = await ytApi('videos', { part:'statistics,contentDetails,status', id: batch.join(',') });
+      (data.items || []).forEach(v => { statsMap[v.id] = v; });
+    }catch(e){ /* leave unresolved ids out below */ }
+  }
+  return items
+    .filter(v => statsMap[v.id] && statsMap[v.id].status && statsMap[v.id].status.embeddable !== false)
+    .map(v => {
+      const s = statsMap[v.id];
+      return Object.assign({}, v, { viewCount: s.statistics.viewCount, duration: formatDuration(s.contentDetails.duration) });
+    });
+}
+function parseChannelInput(input){
+  input = input.trim();
+  let m = input.match(/youtube\.com\/channel\/(UC[\w-]{10,})/);
+  if(m) return { type:'id', value: m[1] };
+  m = input.match(/youtube\.com\/@([\w.-]+)/);
+  if(m) return { type:'handle', value: m[1] };
+  m = input.match(/youtube\.com\/c\/([\w.-]+)/);
+  if(m) return { type:'search', value: m[1] };
+  m = input.match(/youtube\.com\/user\/([\w.-]+)/);
+  if(m) return { type:'user', value: m[1] };
+  if(input.startsWith('@')) return { type:'handle', value: input.slice(1) };
+  if(/^UC[\w-]{10,}$/.test(input)) return { type:'id', value: input };
+  return { type:'search', value: input };
+}
+let lookedUpChannel = null;
+async function lookupChannel(){
+  const raw = document.getElementById('cUrl').value.trim();
+  if(!raw){ alert('Vui lòng nhập link kênh.'); return; }
+  if(!getApiKey()){
+    alert('Cần có YouTube Data API Key để tự động lấy thông tin kênh (miễn phí, lấy từ Google Cloud Console). Bấm "⚙️ API" ở trên để nhập key.');
+    openSettings();
+    return;
+  }
+  const parsed = parseChannelInput(raw);
+  try{
+    let data;
+    if(parsed.type === 'id'){
+      data = await ytApi('channels', { part:'snippet,statistics,contentDetails', id: parsed.value });
+    } else if(parsed.type === 'handle'){
+      data = await ytApi('channels', { part:'snippet,statistics,contentDetails', forHandle: parsed.value });
+    } else if(parsed.type === 'user'){
+      data = await ytApi('channels', { part:'snippet,statistics,contentDetails', forUsername: parsed.value });
+    } else {
+      data = { items: [] };
+    }
+    if(!data.items || !data.items.length){
+      const s = await ytApi('search', { part:'snippet', type:'channel', q: parsed.value, maxResults: 1 });
+      if(s.items && s.items.length){
+        const cid = s.items[0].snippet.channelId || (s.items[0].id && s.items[0].id.channelId);
+        if(cid) data = await ytApi('channels', { part:'snippet,statistics,contentDetails', id: cid });
+      }
+    }
+    if(!data.items || !data.items.length){ alert('Không tìm thấy kênh. Kiểm tra lại link.'); return; }
+    const item = data.items[0];
+    lookedUpChannel = {
+      id: item.id,
+      name: item.snippet.title,
+      handle: item.snippet.customUrl || '',
+      avatar: thumbFromSnippet(item.snippet),
+      uploadsPlaylistId: item.contentDetails.relatedPlaylists.uploads,
+      subscriberCount: item.statistics.hiddenSubscriberCount ? null : item.statistics.subscriberCount,
+      videoCount: item.statistics.videoCount,
+      url: `https://www.youtube.com/channel/${item.id}`
+    };
+    document.getElementById('cPreview').style.display = 'flex';
+    document.getElementById('cPreviewAvatar').src = lookedUpChannel.avatar;
+    document.getElementById('cPreviewName').textContent = lookedUpChannel.name;
+    document.getElementById('cPreviewMeta').textContent = `${lookedUpChannel.handle || ''} · ${formatCount(lookedUpChannel.videoCount)} video`;
+    document.getElementById('saveChannelBtn').style.display = 'inline-flex';
+  }catch(err){
+    if(err.message === 'NO_KEY'){ openSettings(); return; }
+    alert('Lỗi khi tìm kênh: ' + err.message);
+  }
+}
+
+// ---------- Channel view (playlists / videos, real data) ----------
+let chCurrent = null;
+let chTab = 'videos';
+let chPlaylistVideos = null;
+let apiCache = {};
+async function cachedFetch(cacheKey, fetcher){
+  if(apiCache[cacheKey]) return apiCache[cacheKey];
+  const result = await fetcher();
+  apiCache[cacheKey] = result;
+  return result;
+}
+function openChannelView(ch){
+  chCurrent = ch; chTab = 'videos'; chPlaylistVideos = null;
+  document.getElementById('chAvatar').src = ch.avatar || '';
+  document.getElementById('chName').textContent = ch.name;
+  const subText = ch.subscriberCount ? `${formatCount(ch.subscriberCount)} người đăng ký · ` : '';
+  document.getElementById('chMeta').textContent = `${subText}${formatCount(ch.videoCount)} video`;
+  document.getElementById('channelOverlay').style.display = 'block';
+  switchChTab('videos');
+  window.scrollTo(0,0);
+}
+function closeChannelView(){ document.getElementById('channelOverlay').style.display = 'none'; }
+function switchChTab(tab){
+  chTab = tab; chPlaylistVideos = null;
+  document.getElementById('chTabVideos').classList.toggle('active', tab === 'videos');
+  document.getElementById('chTabPlaylists').classList.toggle('active', tab === 'playlists');
+  document.getElementById('chBackRow').style.display = 'none';
+  if(tab === 'videos') loadChannelVideos(); else loadChannelPlaylists();
+}
+function showPlaylistsTab(){ switchChTab('playlists'); }
+async function loadChannelVideos(){
+  setChLoading(true);
+  try{
+    if(!chCurrent.uploadsPlaylistId) throw new Error('Kênh này chưa có video công khai.');
+    const data = await cachedFetch('uploads_' + chCurrent.id, () => ytApi('playlistItems', { part:'snippet', playlistId: chCurrent.uploadsPlaylistId, maxResults: 24 }));
+    const raw = (data.items || [])
+      .filter(it => it.snippet && it.snippet.resourceId && it.snippet.resourceId.videoId)
+      .map(it => ({ id: it.snippet.resourceId.videoId, title: it.snippet.title, channel: chCurrent.name, thumb: thumbFromSnippet(it.snippet) }));
+    const list = await filterEmbeddable(raw);
+    renderChGrid(list, 'video');
+  }catch(err){ showChError(err); } finally{ setChLoading(false); }
+}
+async function loadChannelPlaylists(){
+  setChLoading(true);
+  try{
+    const data = await cachedFetch('playlists_' + chCurrent.id, () => ytApi('playlists', { part:'snippet,contentDetails', channelId: chCurrent.id, maxResults: 24 }));
+    const list = (data.items || []).map(it => ({ id: it.id, title: it.snippet.title, channel: chCurrent.name, thumb: thumbFromSnippet(it.snippet), count: it.contentDetails.itemCount }));
+    renderChGrid(list, 'playlist');
+  }catch(err){ showChError(err); } finally{ setChLoading(false); }
+}
+async function openPlaylist(pl){
+  setChLoading(true);
+  document.getElementById('chBackRow').style.display = 'block';
+  try{
+    const data = await cachedFetch('plitems_' + pl.id, () => ytApi('playlistItems', { part:'snippet', playlistId: pl.id, maxResults: 50 }));
+    const raw = (data.items || [])
+      .filter(it => it.snippet && it.snippet.resourceId && it.snippet.resourceId.videoId)
+      .map(it => ({ id: it.snippet.resourceId.videoId, title: it.snippet.title, channel: chCurrent.name, thumb: thumbFromSnippet(it.snippet) }));
+    const list = await filterEmbeddable(raw);
+    chPlaylistVideos = list;
+    renderChGrid(list, 'video');
+  }catch(err){ showChError(err); } finally{ setChLoading(false); }
+}
+function setChLoading(on){
+  document.getElementById('chLoading').style.display = on ? 'block' : 'none';
+  document.getElementById('chError').style.display = 'none';
+  if(on) document.getElementById('chGrid').innerHTML = '';
+}
+function showChError(err){
+  const noKey = err && err.message === 'NO_KEY';
+  const msg = noKey
+    ? 'Chưa có YouTube Data API Key. Bấm ⚙️ API ở trên để nhập key miễn phí từ Google Cloud Console.'
+    : 'Không tải được dữ liệu: ' + (err && err.message ? err.message : 'lỗi không xác định');
+  const box = document.getElementById('chError');
+  box.style.display = 'block';
+  box.innerHTML = `<div class="big">⚠️</div><p>${escapeHtml(msg)}</p>` + (noKey ? `<button class="btn primary" onclick="openSettings()">Nhập API Key</button>` : '');
+}
+function renderChGrid(list, kind){
+  const grid = document.getElementById('chGrid');
+  grid.innerHTML = '';
+  if(!list.length){ grid.innerHTML = `<div class="empty"><div class="big">📭</div><p>Không có nội dung.</p></div>`; return; }
+  list.forEach((item) => {
+    const statsLine = (kind === 'video' && item.viewCount != null) ? formatViews(item.viewCount) : '';
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="thumb-wrap">
+        <img src="${item.thumb || thumbUrl(item.id)}" alt="">
+        ${kind === 'playlist' ? `<span class="pl-badge">≡ ${item.count}</span>` : ''}
+        ${kind === 'video' && item.duration ? `<span class="pl-badge">${item.duration}</span>` : ''}
+      </div>
+      <div class="card-info">
+        <div class="avatar">${initials(item.channel)}</div>
+        <div>
+          <div class="card-title">${escapeHtml(item.title)}</div>
+          <div class="card-channel">${escapeHtml(item.channel)}${kind === 'playlist' ? ' · Danh sách phát' : ''}</div>
+          ${statsLine ? `<div class="card-stats">${escapeHtml(statsLine)}</div>` : ''}
+        </div>
+      </div>`;
+    card.onclick = () => {
+      if(kind === 'playlist'){ openPlaylist(item); }
+      else {
+        const siblings = chPlaylistVideos || list;
+        const idx = siblings.findIndex(v => v.id === item.id);
+        playVideoList(siblings, idx < 0 ? 0 : idx);
+      }
+    };
+    grid.appendChild(card);
+  });
+}
+
+// ---------- Home feed: merge videos from all followed channels, shuffled ----------
+let homeFeedVideos = [];
+let homeFeedLoaded = false;
+let homeFeedLoading = false;
+let combinedHomeList = [];
+
+function rebuildCombinedHome(){
+  combinedHomeList = shuffleArray(videos.concat(homeFeedVideos));
+}
+
+async function loadHomeFeed(force){
+  if(homeFeedLoading) return;
+  const eligible = channels.filter(c => c.id && c.uploadsPlaylistId);
+  if(!eligible.length || !getApiKey()){
+    homeFeedVideos = []; homeFeedLoaded = true; rebuildCombinedHome(); render();
+    return;
+  }
+  if(homeFeedLoaded && !force) return;
+  homeFeedLoading = true;
+  try{
+    const perChannel = await Promise.all(eligible.map(async ch => {
+      try{
+        const data = await cachedFetch('uploads_' + ch.id, () => ytApi('playlistItems', { part:'snippet', playlistId: ch.uploadsPlaylistId, maxResults: 12 }));
+        return (data.items || [])
+          .filter(it => it.snippet && it.snippet.resourceId && it.snippet.resourceId.videoId)
+          .map(it => ({
+            id: it.snippet.resourceId.videoId, title: it.snippet.title, channel: ch.name,
+            thumb: thumbFromSnippet(it.snippet), publishedAt: it.snippet.publishedAt,
+            category: 'Từ kênh theo dõi', source: 'auto'
+          }));
+      }catch(e){ return []; }
+    }));
+    const merged = await filterEmbeddable(perChannel.flat());
+    homeFeedVideos = merged;
+    homeFeedLoaded = true;
+  }catch(err){
+    homeFeedVideos = [];
+    homeFeedLoaded = true;
+  } finally {
+    homeFeedLoading = false;
+    rebuildCombinedHome();
+    render();
+  }
+}
+
+function goHome(){
+  closePlayer();
+  closeChannelView();
+  activeChannel = null;
+  activeCategory = 'Tất cả';
+  document.getElementById('searchInput').value = '';
+  rebuildCombinedHome();
+  render();
+  window.scrollTo(0,0);
+}
+
+// ---------- Render ----------
+function distinctCategories(){
+  const set = new Set(combinedHomeList.map(v => v.category).filter(Boolean));
+  return ['Tất cả', ...Array.from(set)];
+}
+function renderTabs(){
+  const tabs = document.getElementById('tabs');
+  tabs.innerHTML = '';
+  distinctCategories().forEach(cat => {
+    const el = document.createElement('div');
+    el.className = 'chip' + (cat === activeCategory ? ' active' : '');
+    el.textContent = cat;
+    el.onclick = () => { activeCategory = cat; render(); };
+    tabs.appendChild(el);
+  });
+}
+function renderChannels(){
+  const list = document.getElementById('channelList');
+  list.innerHTML = '';
+  const allRow = document.createElement('div');
+  allRow.className = 'channel-row' + (activeChannel === null ? ' active' : '');
+  allRow.innerHTML = `<div class="avatar" style="background:#555">★</div><div class="channel-name">Tất cả kênh</div>`;
+  allRow.onclick = () => setFilterChannel(null);
+  list.appendChild(allRow);
+
+  channels.forEach((ch, idx) => {
+    const row = document.createElement('div');
+    row.className = 'channel-row' + (activeChannel === ch.name ? ' active' : '');
+    const avatarHtml = ch.avatar
+      ? `<img src="${ch.avatar}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex:0 0 32px;">`
+      : `<div class="avatar">${initials(ch.name)}</div>`;
+    row.innerHTML = `
+      ${avatarHtml}
+      <div class="channel-name">${escapeHtml(ch.name)}</div>
+      ${manageMode ? `<button class="icon-btn" title="Xóa kênh">✕</button>` : ''}
+    `;
+    if(manageMode){
+      row.querySelector('.icon-btn').onclick = (e) => { e.stopPropagation(); deleteChannel(idx); };
+    }
+    row.onclick = () => { ch.id ? openChannelView(ch) : setFilterChannel(ch.name); };
+    list.appendChild(row);
+  });
+}
+function setFilterChannel(name){ activeChannel = name; render(); }
+
+function filteredVideos(){
+  const q = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+  return combinedHomeList.filter(v => {
+    if(activeChannel && v.channel !== activeChannel) return false;
+    if(activeCategory !== 'Tất cả' && v.category !== activeCategory) return false;
+    if(q && !(v.title.toLowerCase().includes(q) || v.channel.toLowerCase().includes(q))) return false;
+    return true;
+  });
+}
+function renderGrid(){
+  const grid = document.getElementById('grid');
+  const empty = document.getElementById('emptyState');
+  const list = filteredVideos();
+  grid.innerHTML = '';
+  document.getElementById('homeLoading').style.display = (homeFeedLoading && !list.length) ? 'block' : 'none';
+  empty.style.display = (list.length || homeFeedLoading) ? 'none' : 'block';
+  list.forEach((v, idx) => {
+    const isManual = !v.source || v.source === 'manual';
+    const statsLine = (v.viewCount != null)
+      ? `${formatViews(v.viewCount)}${v.publishedAt ? ' · ' + formatAgo(v.publishedAt) : ''}`
+      : '';
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="thumb-wrap">
+        <img src="${v.thumb || thumbUrl(v.id)}" alt="">
+        ${v.duration ? `<span class="pl-badge">${v.duration}</span>` : ''}
+        ${manageMode && isManual ? `<button class="card-del" title="Xóa video">✕</button>` : ''}
+      </div>
+      <div class="card-info">
+        <div class="avatar">${initials(v.channel)}</div>
+        <div>
+          <div class="card-title">${escapeHtml(v.title)}</div>
+          <div class="card-channel">${escapeHtml(v.channel)}</div>
+          ${statsLine ? `<div class="card-stats">${escapeHtml(statsLine)}</div>` : (v.category ? `<div class="card-cat">${escapeHtml(v.category)}</div>` : '')}
+        </div>
+      </div>
+    `;
+    if(manageMode && isManual){
+      card.querySelector('.card-del').onclick = (e) => { e.stopPropagation(); deleteVideo(videos.indexOf(v)); };
+    }
+    card.querySelector('.thumb-wrap').addEventListener('click', (e) => {
+      if(e.target.classList.contains('card-del')) return;
+      playVideoList(list, idx);
+    });
+    card.querySelector('.card-info').addEventListener('click', () => playVideoList(list, idx));
+    grid.appendChild(card);
+  });
+}
+function render(){
+  if(getActiveProfile()){
+    const picker = document.getElementById('profilePicker');
+    if(picker.style.display !== 'none') picker.style.display = 'none';
+  }
+  updateProfileChip();
+  updateTimeBadge();
+  renderTabs();
+  renderChannels();
+  renderGrid();
+}
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ---------- Add / Delete video ----------
+function openAddVideo(){
+  document.getElementById('fVideoUrl').value = '';
+  document.getElementById('fTitle').value = '';
+  document.getElementById('fChannel').value = '';
+  document.getElementById('fCategory').value = '';
+  document.getElementById('thumbPreview').style.display = 'none';
+  const chOpts = document.getElementById('channelOptions');
+  chOpts.innerHTML = channels.map(c => `<option value="${escapeHtml(c.name)}">`).join('');
+  const catOpts = document.getElementById('categoryOptions');
+  catOpts.innerHTML = distinctCategories().filter(c => c !== 'Tất cả').map(c => `<option value="${escapeHtml(c)}">`).join('');
+  document.getElementById('addVideoModal').style.display = 'flex';
+}
+function closeAddVideo(){ document.getElementById('addVideoModal').style.display = 'none'; }
+function fillThumbPreview(){
+  const id = extractVideoId(document.getElementById('fVideoUrl').value);
+  const img = document.getElementById('thumbPreview');
+  if(id){ img.src = thumbUrl(id); img.style.display = 'block'; }
+  else { img.style.display = 'none'; }
+}
+function saveVideo(){
+  const id = extractVideoId(document.getElementById('fVideoUrl').value);
+  const title = document.getElementById('fTitle').value.trim();
+  const channel = document.getElementById('fChannel').value.trim();
+  const category = document.getElementById('fCategory').value.trim() || 'Khác';
+  if(!id){ alert('Link YouTube không hợp lệ. Vui lòng dán link dạng youtube.com/watch?v=... hoặc youtu.be/...'); return; }
+  if(!title || !channel){ alert('Vui lòng nhập tiêu đề và tên kênh.'); return; }
+  videos.push({ id, title, channel, category });
+  save('bt_videos', videos);
+  if(!channels.find(c => c.name === channel)){
+    channels.push({ name: channel, url: '' });
+    save('bt_channels', channels);
+  }
+  closeAddVideo();
+  rebuildCombinedHome();
+  render();
+}
+function deleteVideo(idx){
+  if(!confirm('Xóa video này khỏi danh sách của bé?')) return;
+  videos.splice(idx,1); save('bt_videos', videos); rebuildCombinedHome(); render();
+}
+
+// ---------- Add / Delete channel ----------
+function openAddChannel(){
+  document.getElementById('cUrl').value = '';
+  document.getElementById('cPreview').style.display = 'none';
+  document.getElementById('saveChannelBtn').style.display = 'none';
+  lookedUpChannel = null;
+  document.getElementById('addChannelModal').style.display = 'flex';
+}
+function closeAddChannel(){ document.getElementById('addChannelModal').style.display = 'none'; }
+function saveChannel(){
+  if(!lookedUpChannel){ alert('Vui lòng bấm "Tìm kênh" trước.'); return; }
+  if(channels.find(c => c.id === lookedUpChannel.id)){ alert('Kênh này đã có trong danh sách.'); closeAddChannel(); return; }
+  channels.push(lookedUpChannel);
+  save('bt_channels', channels);
+  closeAddChannel();
+  loadHomeFeed(true);
+}
+function deleteChannel(idx){
+  if(!confirm('Xóa kênh này khỏi danh sách theo dõi?')) return;
+  channels.splice(idx,1); save('bt_channels', channels); loadHomeFeed(true);
+}
+
+// ---------- Player ----------
+// Videos always play embedded here (youtube-nocookie iframe) — never redirected to the real youtube.com site.
+function playVideoList(list, index){
+  if(isTimeUp()){ showTimeUpModal(); return; }
+  const v = list[index];
+  if(!v) return;
+  startWatchTimer();
+  document.getElementById('playerFrame').src = `https://www.youtube-nocookie.com/embed/${v.id}?rel=0&modestbranding=1&autoplay=1`;
+  document.getElementById('playerTitle').textContent = v.title;
+  document.getElementById('playerChannel').textContent = v.channel;
+  const listEl = document.getElementById('playerList');
+  listEl.innerHTML = '';
+  list.forEach((ov, i) => {
+    if(i === index) return;
+    const row = document.createElement('div');
+    row.className = 'plist-item';
+    row.innerHTML = `<img src="${ov.thumb || thumbUrl(ov.id)}"><div><div class="t">${escapeHtml(ov.title)}</div><div class="c">${escapeHtml(ov.channel)}</div></div>`;
+    row.onclick = () => playVideoList(list, i);
+    listEl.appendChild(row);
+  });
+  document.getElementById('playerOverlay').style.display = 'block';
+  window.scrollTo(0,0);
+}
+function closePlayer(){
+  stopWatchTimer();
+  document.getElementById('playerFrame').src = '';
+  document.getElementById('playerOverlay').style.display = 'none';
+}
+function enterFullscreen(){
+  const el = document.querySelector('.player-frame');
+  const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+  if(req) req.call(el).catch(() => {});
+}
+function handleFullscreenChange(){
+  const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+  if(fsEl){
+    if(screen.orientation && screen.orientation.lock){
+      screen.orientation.lock('landscape').catch(() => {});
+    }
+  } else if(screen.orientation && screen.orientation.unlock){
+    try{ screen.orientation.unlock(); }catch(e){}
+  }
+}
+document.addEventListener('fullscreenchange', handleFullscreenChange);
+document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+
+document.getElementById('searchInput').addEventListener('input', render);
+
+ensureProfiles();
+initActiveProfile();
+watchLog = loadWatchLog();
+rebuildCombinedHome();
+render();
+loadHomeFeed(false);
+if(!getActiveProfile()){
+  renderProfilePicker();
+  document.getElementById('profilePicker').style.display = 'block';
+}
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
