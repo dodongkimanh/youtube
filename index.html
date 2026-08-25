@@ -82,8 +82,9 @@
   .player-top{display:flex;align-items:center;gap:12px;padding:12px 16px;color:#fff;}
   .player-top button{background:none;border:none;color:#fff;font-size:20px;cursor:pointer;}
   .player-wrap{max-width:960px;margin:0 auto;padding:0 16px;}
-  .player-frame{aspect-ratio:16/9;background:#000;border-radius:8px;overflow:hidden;}
+  .player-frame{position:relative;aspect-ratio:16/9;background:#000;border-radius:8px;overflow:hidden;}
   .player-frame iframe{width:100%;height:100%;border:0;}
+  .player-click-guard{position:absolute;inset:0;z-index:5;background:transparent;cursor:pointer;}
   .player-title{color:#fff;font-size:18px;font-weight:600;margin:14px 0 4px;}
   .player-channel{color:#aaa;font-size:14px;margin-bottom:20px;}
   .player-list{color:#fff;}
@@ -366,7 +367,10 @@
     <button style="margin-left:auto" onclick="enterFullscreen()" title="Toàn màn hình">⛶</button>
   </div>
   <div class="player-wrap">
-    <div class="player-frame"><iframe id="playerFrame" src="" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen></iframe></div>
+    <div class="player-frame">
+      <iframe id="playerFrame" src="" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen></iframe>
+      <div class="player-click-guard" id="playerClickGuard" title="Phát / Tạm dừng" onclick="togglePlayerPlayback()"></div>
+    </div>
     <div class="player-title" id="playerTitle"></div>
     <div class="player-channel" id="playerChannel"></div>
     <div class="player-list">
@@ -1361,12 +1365,18 @@ function deleteChannel(idx){
 
 // ---------- Player ----------
 // Videos always play embedded here (youtube-nocookie iframe) — never redirected to the real youtube.com site.
+// The YouTube logo/watermark inside the embed always links out to youtube.com and can't be removed via
+// URL params, so a transparent click-guard sits on top of the iframe and drives play/pause through the
+// IFrame postMessage API instead, meaning no tap ever reaches the iframe's own clickable elements.
+let playerIsPlaying = true;
 function playVideoList(list, index){
   if(isTimeUp()){ showTimeUpModal(); return; }
   const v = list[index];
   if(!v) return;
   startWatchTimer();
-  document.getElementById('playerFrame').src = `https://www.youtube-nocookie.com/embed/${v.id}?rel=0&modestbranding=1&autoplay=1`;
+  playerIsPlaying = true;
+  const origin = encodeURIComponent(location.origin);
+  document.getElementById('playerFrame').src = `https://www.youtube-nocookie.com/embed/${v.id}?rel=0&modestbranding=1&autoplay=1&playsinline=1&enablejsapi=1&origin=${origin}`;
   document.getElementById('playerTitle').textContent = v.title;
   document.getElementById('playerChannel').textContent = v.channel;
   const listEl = document.getElementById('playerList');
@@ -1386,6 +1396,13 @@ function closePlayer(){
   stopWatchTimer();
   document.getElementById('playerFrame').src = '';
   document.getElementById('playerOverlay').style.display = 'none';
+}
+function togglePlayerPlayback(){
+  const frame = document.getElementById('playerFrame');
+  if(!frame.contentWindow) return;
+  const func = playerIsPlaying ? 'pauseVideo' : 'playVideo';
+  frame.contentWindow.postMessage(JSON.stringify({ event: 'command', func, args: [] }), '*');
+  playerIsPlaying = !playerIsPlaying;
 }
 function enterFullscreen(){
   const el = document.querySelector('.player-frame');
