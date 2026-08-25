@@ -701,6 +701,9 @@ function saveSettings(){
   const k = document.getElementById('apiKeyInput').value.trim();
   localStorage.setItem('bt_apikey', k);
   closeSettings();
+  apiCache = {};
+  homeFeedLoaded = false;
+  loadHomeFeed(true);
 }
 
 // ---------- Shared content: one channels/videos list served to every device ----------
