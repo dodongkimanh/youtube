@@ -221,7 +221,7 @@
 <!-- API Settings Modal -->
 <div class="overlay" id="settingsModal" style="display:none">
   <div class="modal">
-    <h2>Cài đặt YouTube Data API</h2>
+    <h2>Cài đặt</h2>
     <div class="field">
       <label>YouTube Data API v3 Key</label>
       <input id="apiKeyInput" placeholder="AIza...">
@@ -230,6 +230,16 @@
     <div class="modal-actions">
       <button class="btn" onclick="closeSettings()">Đóng</button>
       <button class="btn primary" onclick="saveSettings()">Lưu key</button>
+    </div>
+    <hr style="margin:18px 0;border:none;border-top:1px solid var(--border)">
+    <div class="field">
+      <label>Chuyển cài đặt sang thiết bị khác</label>
+      <div class="hint">Xuất ra file để lưu kênh, video, hồ sơ bé và mã PIN — gửi file này qua Zalo/email rồi nhập lại trên máy khác. File này KHÔNG chứa API key (mỗi máy cần tự nhập key riêng ở trên).</div>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <button class="btn" onclick="exportSettings()">📤 Xuất file cài đặt</button>
+        <button class="btn" onclick="document.getElementById('importFileInput').click()">📥 Nhập file cài đặt</button>
+      </div>
+      <input type="file" id="importFileInput" accept="application/json" style="display:none">
     </div>
   </div>
 </div>
@@ -653,6 +663,60 @@ function saveSettings(){
   localStorage.setItem('bt_apikey', k);
   closeSettings();
 }
+
+// ---------- Export / import settings (move channels, videos, profiles & PIN to another device) ----------
+function exportSettings(){
+  if(!manageMode){ alert('Cần mở khóa 🔒 Quản lý trước khi xuất cài đặt.'); return; }
+  const data = {
+    type: 'kidtube-settings',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    pin, channels, videos, profiles
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `youtube-be-caidat-${todayKey()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+function importSettings(evt){
+  if(!manageMode){ alert('Cần mở khóa 🔒 Quản lý trước khi nhập cài đặt.'); evt.target.value = ''; return; }
+  const file = evt.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const data = JSON.parse(reader.result);
+      if(data.type !== 'kidtube-settings') throw new Error('File không đúng định dạng cài đặt.');
+      if(!confirm('Nhập file này sẽ THAY THẾ toàn bộ kênh, video, hồ sơ bé và mã PIN hiện tại trên máy này. Tiếp tục?')) return;
+      if(Array.isArray(data.channels)){ channels = data.channels; save('bt_channels', channels); }
+      if(Array.isArray(data.videos)){ videos = data.videos; save('bt_videos', videos); }
+      if(Array.isArray(data.profiles) && data.profiles.length){ profiles = data.profiles; save('bt_profiles', profiles); }
+      if(typeof data.pin === 'string' && data.pin){ pin = data.pin; localStorage.setItem('bt_pin', pin); }
+      activeProfileId = null;
+      localStorage.removeItem('bt_activeProfile');
+      apiCache = {};
+      homeFeedLoaded = false;
+      initActiveProfile();
+      rebuildCombinedHome();
+      closeSettings();
+      render();
+      loadHomeFeed(true);
+      if(!getActiveProfile()){ renderProfilePicker(); document.getElementById('profilePicker').style.display = 'block'; }
+      alert('Đã nhập cài đặt thành công. Đừng quên vào ⚙️ API để nhập API key riêng cho máy này.');
+    }catch(e){
+      alert('Không đọc được file: ' + e.message);
+    } finally {
+      evt.target.value = '';
+    }
+  };
+  reader.readAsText(file);
+}
+document.getElementById('importFileInput').addEventListener('change', importSettings);
 async function ytApi(endpoint, params){
   const key = getApiKey();
   if(!key){ throw new Error('NO_KEY'); }
