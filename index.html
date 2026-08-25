@@ -30,16 +30,16 @@
   .search{flex:1;max-width:600px;display:flex;}
   .search input{flex:1;padding:8px 14px;border:1px solid var(--border);border-radius:20px 0 0 20px;outline:none;font-size:14px;}
   .search button{border:1px solid var(--border);border-left:none;background:var(--chip);border-radius:0 20px 20px 0;padding:0 16px;cursor:pointer;}
-  .hdr-actions{display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap;row-gap:8px;}
+  .hdr-actions{display:flex;align-items:center;gap:2px;margin-left:auto;}
   .btn{border:1px solid var(--border);background:var(--panel);border-radius:18px;padding:8px 14px;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap;}
   .btn:hover{background:var(--chip);}
   .btn.primary{background:var(--text);color:#fff;border-color:var(--text);}
-  .btn.locked{background:#fff3f3;border-color:#f3c8c8;color:var(--accent);}
-  .btn.icon-only{border:none;background:none;padding:6px;width:38px;height:38px;border-radius:50%;justify-content:center;font-size:17px;}
+  .btn.icon-only{position:relative;border:none;background:none;padding:0;width:34px;height:34px;border-radius:50%;justify-content:center;font-size:16px;flex:0 0 34px;}
   .btn.icon-only:hover{background:var(--chip);}
-  #menuBtn{font-size:20px;}
-  .btn.create{background:var(--chip);border-color:var(--chip);font-weight:600;}
-  #profileChip{border-radius:20px;background:var(--chip);border-color:var(--chip);}
+  .btn.locked{background:#fff3f3;border-color:#f3c8c8;color:var(--accent);}
+  #menuBtn{font-size:19px;}
+  .btn.create{background:var(--chip);border-color:var(--chip);border-radius:16px;padding:6px 12px;font-weight:600;font-size:13px;}
+  .mini-badge{position:absolute;top:1px;right:1px;background:var(--accent);color:#fff;font-size:9px;font-weight:700;line-height:1;padding:2px 4px;border-radius:8px;min-width:12px;}
 
   .tabs{display:flex;gap:8px;padding:10px 16px;overflow-x:auto;background:var(--panel);border-bottom:1px solid var(--border);}
   .tabs::-webkit-scrollbar{display:none;}
@@ -127,6 +127,9 @@
     aside{display:none;}
     .search{display:none;}
     #mobileSearchBtn{display:flex;}
+    header{padding:8px 10px;gap:6px;flex-wrap:nowrap;}
+    .logo{font-size:17px;}
+    .logo .play{width:22px;height:15px;}
     header.search-active .search{display:flex;order:10;flex-basis:100%;margin-top:8px;}
     .bottomnav{display:flex;position:sticky;bottom:0;background:var(--panel);border-top:1px solid var(--border);z-index:20;}
     .bottomnav button{flex:1;background:none;border:none;padding:8px 0;font-size:11px;color:var(--sub);display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;}
@@ -149,9 +152,9 @@
     <button class="btn icon-only" onclick="toggleMobileSearch()" title="Tìm kiếm bằng giọng nói">🎤</button>
     <button class="btn create" id="addVideoBtn" style="display:none" onclick="openAddVideo()">+ Tạo</button>
     <button class="btn" id="apiSettingsBtn" style="display:none" onclick="openSettings()">⚙️ API</button>
-    <button class="btn" id="timeBadge" onclick="onTimeBadgeClick()" title="Thời gian xem hôm nay">⏱ --:--</button>
-    <button class="btn" id="lockBtn" onclick="toggleManage()">🔒 Quản lý</button>
-    <button class="btn" id="profileChip" onclick="openProfilePickerManual()" title="Đổi bé đang xem">🙂 Bé</button>
+    <button class="btn icon-only" id="timeBadge" onclick="onTimeBadgeClick()" title="Thời gian xem hôm nay">⏱<span class="mini-badge" id="timeBadgeNum" style="display:none"></span></button>
+    <button class="btn icon-only" id="lockBtn" onclick="toggleManage()" title="Quản lý">🔒</button>
+    <button class="btn icon-only" id="profileChip" onclick="openProfilePickerManual()" title="Đổi bé đang xem">🙂</button>
   </div>
 </header>
 
@@ -497,7 +500,8 @@ function updateProfileChip(){
   const chip = document.getElementById('profileChip');
   if(!chip) return;
   const prof = getActiveProfile();
-  chip.textContent = prof ? `${prof.avatar || '🙂'} ${prof.name}` : '👤 Chọn bé';
+  chip.textContent = prof ? (prof.avatar || '🙂') : '👤';
+  chip.title = prof ? `Đang xem: ${prof.name} (bấm để đổi bé)` : 'Chọn bé đang xem';
 }
 function renderProfilePicker(){
   const grid = document.getElementById('profileGrid');
@@ -635,15 +639,18 @@ function updateTimeBadge(){
   watchLog = loadWatchLog();
   const limit = getDailyLimitMinutes();
   const badge = document.getElementById('timeBadge');
+  const num = document.getElementById('timeBadgeNum');
   const badgeMobile = document.getElementById('timeBadgeMobile');
   if(limit == null){
-    if(badge) badge.textContent = '⏱ Không giới hạn';
+    if(badge) badge.title = 'Thời gian xem hôm nay: Không giới hạn';
+    if(num) num.style.display = 'none';
     if(badgeMobile) badgeMobile.textContent = 'Thời gian';
     return;
   }
   const rem = remainingSeconds();
   const mm = Math.floor(rem / 60), ss = rem % 60;
-  if(badge) badge.textContent = `⏱ ${mm}:${String(ss).padStart(2,'0')}`;
+  if(badge) badge.title = `Còn lại hôm nay: ${mm}:${String(ss).padStart(2,'0')}`;
+  if(num){ num.textContent = mm; num.style.display = 'block'; }
   if(badgeMobile) badgeMobile.textContent = `${mm} phút`;
 }
 function onTimeBadgeClick(){
@@ -712,8 +719,10 @@ function applyManageUI(){
   document.getElementById('addVideoBtn').style.display = manageMode ? 'flex' : 'none';
   document.getElementById('addChannelRow').style.display = manageMode ? 'flex' : 'none';
   document.getElementById('apiSettingsBtn').style.display = manageMode ? 'flex' : 'none';
-  document.getElementById('lockBtn').textContent = manageMode ? '🔓 Đang quản lý' : '🔒 Quản lý';
-  document.getElementById('lockBtn').classList.toggle('locked', manageMode);
+  const lockBtn = document.getElementById('lockBtn');
+  lockBtn.textContent = manageMode ? '🔓' : '🔒';
+  lockBtn.title = manageMode ? 'Đang quản lý' : 'Quản lý';
+  lockBtn.classList.toggle('locked', manageMode);
   render();
 }
 
