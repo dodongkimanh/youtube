@@ -93,6 +93,7 @@
   .player-controls input[type=range]::-moz-range-thumb{width:12px;height:12px;border:0;border-radius:50%;background:#fff;cursor:pointer;}
   .player-controls .pc-seek{flex:1 1 auto;min-width:40px;}
   .player-controls .pc-volume{width:60px;flex:0 0 60px;}
+  .player-fs-btn{position:absolute;top:10px;right:10px;z-index:15;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;width:34px;height:34px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
   .player-title{color:#fff;font-size:18px;font-weight:600;margin:14px 0 4px;}
   .player-channel{color:#aaa;font-size:14px;margin-bottom:20px;}
   .player-list{color:#fff;}
@@ -378,6 +379,7 @@
     <div class="player-frame">
       <div id="playerFrame"></div>
       <div class="player-click-guard" id="playerClickGuard" title="Phát / Tạm dừng" onclick="togglePlayerPlayback()"></div>
+      <button type="button" class="player-fs-btn" title="Toàn màn hình / Xoay ngang" onclick="enterFullscreen()">⛶</button>
       <div class="player-controls">
         <button type="button" class="pc-btn" id="playPauseBtn" title="Phát / Tạm dừng" onclick="togglePlayerPlayback()">⏸</button>
         <span class="pc-time" id="playerTime">0:00 / 0:00</span>
