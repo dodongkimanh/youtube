@@ -107,9 +107,12 @@
   .ch-tabs{display:flex;gap:8px;border-bottom:1px solid var(--border);margin-bottom:16px;padding-bottom:10px;}
 
   .bottomnav{display:none;}
+  #mobileSearchBtn{display:none;}
   @media (max-width:820px){
     aside{display:none;}
     .search{display:none;}
+    #mobileSearchBtn{display:flex;}
+    header.search-active .search{display:flex;order:10;flex-basis:100%;margin-top:8px;}
     .bottomnav{display:flex;position:sticky;bottom:0;background:var(--panel);border-top:1px solid var(--border);z-index:20;}
     .bottomnav button{flex:1;background:none;border:none;padding:8px 0;font-size:11px;color:var(--sub);display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;}
     .bottomnav button.active{color:var(--text);font-weight:600;}
@@ -126,6 +129,7 @@
     <button onclick="render()">🔍</button>
   </div>
   <div class="hdr-actions">
+    <button class="btn" id="mobileSearchBtn" onclick="toggleMobileSearch()" title="Tìm kiếm">🔍</button>
     <button class="btn" id="profileChip" onclick="openProfilePickerManual()" title="Đổi bé đang xem">🙂 Bé</button>
     <button class="btn" id="timeBadge" onclick="onTimeBadgeClick()" title="Thời gian xem hôm nay">⏱ --:--</button>
     <button class="btn" id="addVideoBtn" style="display:none" onclick="openAddVideo()">+ Thêm video</button>
@@ -1156,12 +1160,23 @@ async function loadHomeFeed(force){
   }
 }
 
+function toggleMobileSearch(){
+  const header = document.querySelector('header');
+  const isOpen = header.classList.toggle('search-active');
+  if(isOpen){
+    document.getElementById('searchInput').focus();
+  } else {
+    document.getElementById('searchInput').value = '';
+    render();
+  }
+}
 function goHome(){
   closePlayer();
   closeChannelView();
   activeChannel = null;
   activeCategory = 'Tất cả';
   document.getElementById('searchInput').value = '';
+  document.querySelector('header').classList.remove('search-active');
   rebuildCombinedHome();
   render();
   window.scrollTo(0,0);
