@@ -1714,9 +1714,15 @@ function slideShorts(dir){
 })();
 
 function enterFullscreen(){
+  const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+  if(fsEl){
+    const exit = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+    if(exit){ try{ exit.call(document); }catch(e){} }
+    return;
+  }
   const el = document.querySelector('.player-frame');
   const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
-  if(req) req.call(el).catch(() => {});
+  if(req){ try{ req.call(el); }catch(e){} }
 }
 function handleFullscreenChange(){
   const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
