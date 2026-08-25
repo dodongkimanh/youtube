@@ -61,7 +61,8 @@
   main{flex:1;padding:18px;}
   .shorts-section{margin-bottom:26px;}
   .shorts-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
-  .shorts-header .sh-icon{width:24px;height:24px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;flex:0 0 24px;}
+  .shorts-header .sh-icon{width:24px;height:24px;flex:0 0 24px;display:flex;align-items:center;justify-content:center;}
+  .shorts-header .sh-icon img{width:100%;height:100%;object-fit:contain;display:block;}
   .shorts-header h3{font-size:16px;font-weight:700;margin:0;flex:1;}
   .shorts-header .sh-more{background:none;border:none;font-size:18px;color:var(--sub);cursor:pointer;padding:4px;}
   .shorts-row{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;}
@@ -193,7 +194,7 @@
   <main>
     <div class="shorts-section" id="shortsSection" style="display:none">
       <div class="shorts-header">
-        <span class="sh-icon">⚡</span>
+        <span class="sh-icon"><img src="icons/sh-logo.png" alt=""></span>
         <h3>Shorts</h3>
         <button type="button" class="sh-more" title="Thêm">⋮</button>
       </div>
