@@ -233,7 +233,19 @@
     </div>
     <hr style="margin:18px 0;border:none;border-top:1px solid var(--border)">
     <div class="field">
-      <label>Chuyển cài đặt sang thiết bị khác</label>
+      <label>Danh sách kênh dùng chung cho mọi thiết bị</label>
+      <div class="hint">
+        Xuất file <code>shared-content.json</code> rồi tải lên đúng vị trí gốc của repo GitHub (kéo-thả qua trang web GitHub, không cần dòng lệnh) — mọi điện thoại/máy tính mở trang này sẽ tự thấy cùng một danh sách kênh, không cần nhập lại từng máy.
+        <span id="sharedContentStatus" style="display:block;margin-top:4px;font-weight:600"></span>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <button class="btn" onclick="exportSharedContent()">📤 Xuất shared-content.json</button>
+        <button class="btn" onclick="refreshSharedContent()">🔄 Tải lại danh sách chung</button>
+      </div>
+    </div>
+    <hr style="margin:18px 0;border:none;border-top:1px solid var(--border)">
+    <div class="field">
+      <label>Sao lưu toàn bộ cài đặt (chuyển hồ sơ bé + PIN sang máy khác)</label>
       <div class="hint">Xuất ra file để lưu kênh, video, hồ sơ bé và mã PIN — gửi file này qua Zalo/email rồi nhập lại trên máy khác. File này KHÔNG chứa API key (mỗi máy cần tự nhập key riêng ở trên).</div>
       <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
         <button class="btn" onclick="exportSettings()">📤 Xuất file cài đặt</button>
@@ -655,6 +667,9 @@ function applyManageUI(){
 function getApiKey(){ return localStorage.getItem('bt_apikey') || ''; }
 function openSettings(){
   document.getElementById('apiKeyInput').value = getApiKey();
+  document.getElementById('sharedContentStatus').textContent = sharedContentActive
+    ? '✅ Đang dùng danh sách kênh chung từ shared-content.json'
+    : '⚠️ Chưa có shared-content.json — mỗi máy đang dùng danh sách kênh riêng.';
   document.getElementById('settingsModal').style.display = 'flex';
 }
 function closeSettings(){ document.getElementById('settingsModal').style.display = 'none'; }
@@ -662,6 +677,50 @@ function saveSettings(){
   const k = document.getElementById('apiKeyInput').value.trim();
   localStorage.setItem('bt_apikey', k);
   closeSettings();
+}
+
+// ---------- Shared content: one channels/videos list served to every device ----------
+// Static hosting has no shared database, so the "single source of truth" is a JSON
+// file committed to the repo. Every device fetches it fresh on load; publishing an
+// update just means replacing that one file on GitHub — no per-device import needed.
+let sharedContentActive = false;
+async function loadSharedContent(){
+  try{
+    const res = await fetch('shared-content.json', { cache: 'no-store' });
+    if(!res.ok) return false;
+    const data = await res.json();
+    if(data.type !== 'kidtube-shared-content') return false;
+    if(Array.isArray(data.channels)){ channels = data.channels; save('bt_channels', channels); }
+    if(Array.isArray(data.videos)){ videos = data.videos; save('bt_videos', videos); }
+    sharedContentActive = true;
+    return true;
+  }catch(e){
+    return false;
+  }
+}
+function exportSharedContent(){
+  if(!manageMode){ alert('Cần mở khóa 🔒 Quản lý trước khi xuất.'); return; }
+  const data = { type: 'kidtube-shared-content', version: 1, exportedAt: new Date().toISOString(), channels, videos };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'shared-content.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  alert('Đã tải shared-content.json. Vào trang GitHub của repo → kéo-thả file này để thay thế file cũ ở thư mục gốc → Commit changes. Sau ~1 phút mọi thiết bị sẽ tự thấy danh sách mới.');
+}
+async function refreshSharedContent(){
+  const ok = await loadSharedContent();
+  document.getElementById('sharedContentStatus').textContent = ok
+    ? '✅ Đang dùng danh sách kênh chung từ shared-content.json'
+    : '⚠️ Chưa có shared-content.json — mỗi máy đang dùng danh sách kênh riêng.';
+  rebuildCombinedHome();
+  render();
+  loadHomeFeed(true);
+  alert(ok ? 'Đã cập nhật danh sách kênh chung mới nhất.' : 'Chưa tìm thấy shared-content.json trên GitHub.');
 }
 
 // ---------- Export / import settings (move channels, videos, profiles & PIN to another device) ----------
@@ -1210,16 +1269,19 @@ document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
 
 document.getElementById('searchInput').addEventListener('input', render);
 
-ensureProfiles();
-initActiveProfile();
-watchLog = loadWatchLog();
-rebuildCombinedHome();
-render();
-loadHomeFeed(false);
-if(!getActiveProfile()){
-  renderProfilePicker();
-  document.getElementById('profilePicker').style.display = 'block';
-}
+(async function initApp(){
+  ensureProfiles();
+  initActiveProfile();
+  watchLog = loadWatchLog();
+  await loadSharedContent();
+  rebuildCombinedHome();
+  render();
+  loadHomeFeed(false);
+  if(!getActiveProfile()){
+    renderProfilePicker();
+    document.getElementById('profilePicker').style.display = 'block';
+  }
+})();
 
 if('serviceWorker' in navigator){
   window.addEventListener('load', () => {
