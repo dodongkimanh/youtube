@@ -158,6 +158,7 @@
     .bottomnav button.active{color:var(--text);font-weight:600;}
     .bottomnav .bn-icon{font-size:20px;}
     .bottomnav .bn-icon svg{width:22px;height:22px;fill:currentColor;display:block;}
+    .bottomnav .bn-icon img{width:22px;height:22px;object-fit:contain;display:block;}
   }
 </style>
 </head>
@@ -210,8 +211,8 @@
 
 <div class="bottomnav">
   <button class="active" onclick="goHome()"><span class="bn-icon"><svg viewBox="0 0 24 24"><path d="M12 3.2 2.5 11h2.3v9h5.4v-6.3h3.6V20h5.4v-9h2.3z"/></svg></span>Trang chủ</button>
-  <button onclick="goShorts()"><span class="bn-icon"><svg viewBox="0 0 24 24"><path d="M11 21v-6.5H7L13 3v6.5h4L11 21z" opacity=".45"/><path d="M11 21v-6.5H7L13 3v6.5h4L11 21z" transform="translate(3,0) scale(0.8)"/></svg></span>Shorts</button>
-  <button onclick="document.querySelector('aside').style.display='block'"><span class="bn-icon">📡</span>Kênh</button>
+  <button onclick="goShorts()"><span class="bn-icon"><img src="icons/nav-shorts.png" alt=""></span>Shorts</button>
+  <button onclick="document.querySelector('aside').style.display='block'"><span class="bn-icon"><img src="icons/nav-kenh.png" alt=""></span>Kênh</button>
   <button onclick="onTimeBadgeClick()"><span class="bn-icon">⏱️</span><span id="timeBadgeMobile">Thời gian</span></button>
   <button onclick="toggleManage()"><span class="bn-icon">🔒</span>Quản lý</button>
 </div>
