@@ -120,6 +120,17 @@
   .plist-item .t{font-size:13px;font-weight:600;line-height:1.3;}
   .plist-item .c{font-size:12px;color:#aaa;margin-top:4px;}
 
+  .shorts-player-overlay{position:fixed;inset:0;background:#000;z-index:70;overflow:hidden;touch-action:none;}
+  .sp-back{position:absolute;top:14px;left:14px;z-index:20;background:rgba(0,0,0,.5);color:#fff;border:none;border-radius:50%;width:38px;height:38px;font-size:20px;cursor:pointer;}
+  .sp-frame{position:relative;width:100%;height:100%;transition:transform .22s ease;}
+  .sp-frame iframe{width:100%;height:100%;border:0;}
+  .sp-frame .player-click-guard{position:absolute;inset:0;z-index:5;background:transparent;}
+  .sp-controls{position:absolute;right:12px;bottom:90px;z-index:15;display:flex;flex-direction:column;gap:16px;}
+  .sp-controls .pc-btn{background:rgba(0,0,0,.5);border:none;color:#fff;width:42px;height:42px;border-radius:50%;font-size:18px;cursor:pointer;}
+  .sp-info{position:absolute;left:16px;right:70px;bottom:24px;z-index:15;color:#fff;}
+  .sp-title{font-weight:700;font-size:15px;line-height:1.3;margin-bottom:4px;}
+  .sp-channel{font-size:13px;opacity:.85;}
+
   .pl-badge{position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.75);color:#fff;font-size:12px;padding:2px 7px;border-radius:4px;font-weight:600;}
 
   .channel-overlay{position:fixed;inset:0;background:var(--bg);z-index:55;overflow:auto;}
@@ -424,6 +435,23 @@
     <div class="player-list">
       <h4>Video khác trong danh sách của bé</h4>
       <div id="playerList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Shorts player: fullscreen vertical, swipe up/down to change video -->
+<div class="shorts-player-overlay" id="shortsPlayerOverlay" style="display:none">
+  <button type="button" class="sp-back" onclick="closeShortsPlayer()">←</button>
+  <div class="sp-frame" id="spFrame">
+    <div id="shortsPlayerFrame"></div>
+    <div class="player-click-guard" onclick="toggleShortsPlayback()"></div>
+    <div class="sp-controls">
+      <button type="button" class="pc-btn" id="spPlayPauseBtn" title="Phát / Tạm dừng" onclick="toggleShortsPlayback()">⏸</button>
+      <button type="button" class="pc-btn" id="spMuteBtn" title="Tắt / Bật tiếng" onclick="toggleShortsMute()">🔊</button>
+    </div>
+    <div class="sp-info">
+      <div class="sp-title" id="spTitle"></div>
+      <div class="sp-channel" id="spChannel"></div>
     </div>
   </div>
 </div>
@@ -1326,7 +1354,7 @@ function renderShorts(){
       <div class="thumb-wrap"><img src="${v.thumb || thumbUrl(v.id)}" alt=""></div>
       <div class="st-title">${escapeHtml(v.title)}</div>
     `;
-    card.onclick = () => playVideoList(list, idx);
+    card.onclick = () => openShortsPlayer(list, idx);
     row.appendChild(card);
   });
 }
@@ -1478,6 +1506,16 @@ function onYouTubeIframeAPIReady(){
       onStateChange: onYtStateChange
     }
   });
+  spPlayer = new YT.Player('shortsPlayerFrame', {
+    width: '100%',
+    height: '100%',
+    host: 'https://www.youtube-nocookie.com',
+    playerVars: { rel: 0, modestbranding: 1, playsinline: 1, loop: 1, origin: location.origin },
+    events: {
+      onReady: () => { spReady = true; loadShortsIndex(spIndex); },
+      onStateChange: onSpStateChange
+    }
+  });
 }
 function loadIntoPlayer(videoId){
   if(!playerReady){ pendingVideoId = videoId; return; }
@@ -1563,6 +1601,88 @@ function closePlayer(){
   if(playerReady) ytPlayer.stopVideo();
   document.getElementById('playerOverlay').style.display = 'none';
 }
+
+// ---------- Shorts player: fullscreen vertical, swipe up/down to change video ----------
+let spPlayer = null;
+let spReady = false;
+let spList = [];
+let spIndex = 0;
+let spPlaying = true;
+
+function openShortsPlayer(list, index){
+  if(isTimeUp()){ showTimeUpModal(); return; }
+  spList = list;
+  document.getElementById('shortsPlayerOverlay').style.display = 'block';
+  startWatchTimer();
+  loadShortsIndex(index);
+}
+function closeShortsPlayer(){
+  stopWatchTimer();
+  if(spReady) spPlayer.stopVideo();
+  document.getElementById('shortsPlayerOverlay').style.display = 'none';
+}
+function loadShortsIndex(i){
+  if(i < 0 || i >= spList.length) return;
+  spIndex = i;
+  const v = spList[i];
+  spPlaying = true;
+  document.getElementById('spTitle').textContent = v.title;
+  document.getElementById('spChannel').textContent = v.channel;
+  document.getElementById('spPlayPauseBtn').textContent = '⏸';
+  if(!spReady) return;
+  spPlayer.loadVideoById(v.id);
+}
+function onSpStateChange(e){
+  if(e.data === YT.PlayerState.PLAYING){ spPlaying = true; }
+  else if(e.data === YT.PlayerState.PAUSED){ spPlaying = false; }
+  else if(e.data === YT.PlayerState.ENDED){ goShortsNext(); return; }
+  document.getElementById('spPlayPauseBtn').textContent = spPlaying ? '⏸' : '▶';
+}
+function toggleShortsPlayback(){
+  if(!spReady) return;
+  if(spPlaying){ spPlayer.pauseVideo(); } else { spPlayer.playVideo(); }
+}
+function toggleShortsMute(){
+  if(!spReady) return;
+  const nowMuted = !spPlayer.isMuted();
+  if(nowMuted){ spPlayer.mute(); } else { spPlayer.unMute(); }
+  document.getElementById('spMuteBtn').textContent = nowMuted ? '🔇' : '🔊';
+}
+function goShortsNext(){ slideShorts(1); }
+function goShortsPrev(){ slideShorts(-1); }
+function slideShorts(dir){
+  const next = spIndex + dir;
+  if(next < 0 || next >= spList.length) return;
+  const frame = document.getElementById('spFrame');
+  frame.style.transition = 'transform .22s ease';
+  frame.style.transform = `translateY(${dir > 0 ? '-100%' : '100%'})`;
+  setTimeout(() => {
+    frame.style.transition = 'none';
+    frame.style.transform = dir > 0 ? 'translateY(100%)' : 'translateY(-100%)';
+    loadShortsIndex(next);
+    requestAnimationFrame(() => {
+      frame.style.transform = 'translateY(0)';
+      requestAnimationFrame(() => { frame.style.transition = 'transform .22s ease'; });
+    });
+  }, 220);
+}
+(function initShortsSwipe(){
+  const overlay = document.getElementById('shortsPlayerOverlay');
+  let startY = null;
+  overlay.addEventListener('touchstart', (e) => { startY = e.touches[0].clientY; }, { passive: true });
+  overlay.addEventListener('touchend', (e) => {
+    if(startY == null) return;
+    const dy = e.changedTouches[0].clientY - startY;
+    startY = null;
+    if(Math.abs(dy) < 50) return;
+    if(dy < 0) goShortsNext(); else goShortsPrev();
+  }, { passive: true });
+  overlay.addEventListener('wheel', (e) => {
+    if(Math.abs(e.deltaY) < 20) return;
+    if(e.deltaY > 0) goShortsNext(); else goShortsPrev();
+  }, { passive: true });
+})();
+
 function enterFullscreen(){
   const el = document.querySelector('.player-frame');
   const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
