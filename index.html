@@ -146,6 +146,7 @@
     .bottomnav button{flex:1;background:none;border:none;padding:8px 0;font-size:11px;color:var(--sub);display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;}
     .bottomnav button.active{color:var(--text);font-weight:600;}
     .bottomnav .bn-icon{font-size:20px;}
+    .bottomnav .bn-icon-shorts{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;background:var(--accent);border-radius:6px;color:#fff;font-size:12px;line-height:1;}
   }
 </style>
 </head>
@@ -198,6 +199,7 @@
 
 <div class="bottomnav">
   <button class="active" onclick="goHome()"><span class="bn-icon">🏠</span>Trang chủ</button>
+  <button onclick="goShorts()"><span class="bn-icon bn-icon-shorts">⚡</span>Shorts</button>
   <button onclick="document.querySelector('aside').style.display='block'"><span class="bn-icon">📡</span>Kênh</button>
   <button onclick="onTimeBadgeClick()"><span class="bn-icon">⏱️</span><span id="timeBadgeMobile">Thời gian</span></button>
   <button onclick="toggleManage()"><span class="bn-icon">🔒</span>Quản lý</button>
@@ -1244,6 +1246,11 @@ function goHome(){
   rebuildCombinedHome();
   render();
   window.scrollTo(0,0);
+}
+function goShorts(){
+  goHome();
+  const el = document.getElementById('shortsSection');
+  if(el && el.style.display !== 'none') el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // ---------- Render ----------
