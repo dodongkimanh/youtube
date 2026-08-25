@@ -1500,7 +1500,7 @@ function onYouTubeIframeAPIReady(){
     width: '100%',
     height: '100%',
     host: 'https://www.youtube-nocookie.com',
-    playerVars: { rel: 0, modestbranding: 1, playsinline: 1, origin: location.origin },
+    playerVars: { rel: 0, modestbranding: 1, playsinline: 1, controls: 0, origin: location.origin },
     events: {
       onReady: () => { playerReady = true; if(pendingVideoId){ loadIntoPlayer(pendingVideoId); } },
       onStateChange: onYtStateChange
@@ -1510,7 +1510,7 @@ function onYouTubeIframeAPIReady(){
     width: '100%',
     height: '100%',
     host: 'https://www.youtube-nocookie.com',
-    playerVars: { rel: 0, modestbranding: 1, playsinline: 1, loop: 1, origin: location.origin },
+    playerVars: { rel: 0, modestbranding: 1, playsinline: 1, controls: 0, loop: 1, origin: location.origin },
     events: {
       onReady: () => { spReady = true; loadShortsIndex(spIndex); },
       onStateChange: onSpStateChange
@@ -1572,10 +1572,38 @@ function toggleMute(){
   document.getElementById('muteBtn').textContent = nowMuted ? '🔇' : '🔊';
 }
 
-function playVideoList(list, index){
+// Videos aren't always added via a /shorts/ link even when the content is vertical, so the first
+// time we see a video whose isShort flag was never set, ask YouTube's public oEmbed endpoint for its
+// width/height and remember the result — vertical ones get routed to the fullscreen Shorts player too.
+const videoOrientationCache = {};
+async function isVerticalVideo(id){
+  if(id in videoOrientationCache) return videoOrientationCache[id];
+  let vertical = false;
+  try{
+    const res = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent('https://www.youtube.com/watch?v=' + id)}&format=json`);
+    if(res.ok){ const data = await res.json(); vertical = data.height > data.width; }
+  }catch(e){ /* network/API hiccup: fall back to the normal horizontal player */ }
+  videoOrientationCache[id] = vertical;
+  return vertical;
+}
+async function playVideoList(list, index){
   if(isTimeUp()){ showTimeUpModal(); return; }
   const v = list[index];
   if(!v) return;
+  // list here is the regular (mixed-orientation) grid/playlist, not a curated Shorts row, so a video
+  // routed to the vertical player only swipes within itself rather than into a landscape video next to it.
+  if(v.isShort){ openShortsPlayer([v], 0); return; }
+  if(v.isShort == null){
+    if(await isVerticalVideo(v.id)){
+      v.isShort = true;
+      if(videos.includes(v)) save('bt_videos', videos);
+      rebuildCombinedHome();
+      render();
+      openShortsPlayer([v], 0);
+      return;
+    }
+    v.isShort = false;
+  }
   startWatchTimer();
   playerIsPlaying = true;
   document.getElementById('playPauseBtn').textContent = '⏸';
