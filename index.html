@@ -30,15 +30,20 @@
   .search{flex:1;max-width:600px;display:flex;}
   .search input{flex:1;padding:8px 14px;border:1px solid var(--border);border-radius:20px 0 0 20px;outline:none;font-size:14px;}
   .search button{border:1px solid var(--border);border-left:none;background:var(--chip);border-radius:0 20px 20px 0;padding:0 16px;cursor:pointer;}
-  .hdr-actions{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap;row-gap:8px;}
+  .hdr-actions{display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap;row-gap:8px;}
   .btn{border:1px solid var(--border);background:var(--panel);border-radius:18px;padding:8px 14px;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap;}
   .btn:hover{background:var(--chip);}
   .btn.primary{background:var(--text);color:#fff;border-color:var(--text);}
   .btn.locked{background:#fff3f3;border-color:#f3c8c8;color:var(--accent);}
+  .btn.icon-only{border:none;background:none;padding:6px;width:38px;height:38px;border-radius:50%;justify-content:center;font-size:17px;}
+  .btn.icon-only:hover{background:var(--chip);}
+  #menuBtn{font-size:20px;}
+  .btn.create{background:var(--chip);border-color:var(--chip);font-weight:600;}
+  #profileChip{border-radius:20px;background:var(--chip);border-color:var(--chip);}
 
   .tabs{display:flex;gap:8px;padding:10px 16px;overflow-x:auto;background:var(--panel);border-bottom:1px solid var(--border);}
   .tabs::-webkit-scrollbar{display:none;}
-  .chip{flex:0 0 auto;padding:7px 14px;border-radius:8px;background:var(--chip);font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;}
+  .chip{flex:0 0 auto;padding:7px 16px;border-radius:20px;background:var(--chip);font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;}
   .chip.active{background:var(--chip-active);color:var(--chip-active-text);}
 
   .layout{display:flex;max-width:1400px;margin:0 auto;}
@@ -133,18 +138,20 @@
 <body>
 
 <header>
+  <button class="btn icon-only" id="menuBtn" onclick="toggleSidebar()" title="Menu">☰</button>
   <div class="logo" onclick="goHome()" style="cursor:pointer"><span class="play"></span>YouTube</div>
   <div class="search">
     <input id="searchInput" type="text" placeholder="Tìm trong video đã chọn cho bé...">
     <button onclick="render()">🔍</button>
   </div>
   <div class="hdr-actions">
-    <button class="btn" id="mobileSearchBtn" onclick="toggleMobileSearch()" title="Tìm kiếm">🔍</button>
-    <button class="btn" id="profileChip" onclick="openProfilePickerManual()" title="Đổi bé đang xem">🙂 Bé</button>
-    <button class="btn" id="timeBadge" onclick="onTimeBadgeClick()" title="Thời gian xem hôm nay">⏱ --:--</button>
-    <button class="btn" id="addVideoBtn" style="display:none" onclick="openAddVideo()">+ Thêm video</button>
+    <button class="btn icon-only" id="mobileSearchBtn" onclick="toggleMobileSearch()" title="Tìm kiếm">🔍</button>
+    <button class="btn icon-only" onclick="toggleMobileSearch()" title="Tìm kiếm bằng giọng nói">🎤</button>
+    <button class="btn create" id="addVideoBtn" style="display:none" onclick="openAddVideo()">+ Tạo</button>
     <button class="btn" id="apiSettingsBtn" style="display:none" onclick="openSettings()">⚙️ API</button>
+    <button class="btn" id="timeBadge" onclick="onTimeBadgeClick()" title="Thời gian xem hôm nay">⏱ --:--</button>
     <button class="btn" id="lockBtn" onclick="toggleManage()">🔒 Quản lý</button>
+    <button class="btn" id="profileChip" onclick="openProfilePickerManual()" title="Đổi bé đang xem">🙂 Bé</button>
   </div>
 </header>
 
@@ -1191,6 +1198,12 @@ function toggleMobileSearch(){
     document.getElementById('searchInput').value = '';
     render();
   }
+}
+function toggleSidebar(){
+  const aside = document.querySelector('aside');
+  if(!aside) return;
+  const isOpen = getComputedStyle(aside).display !== 'none';
+  aside.style.display = isOpen ? 'none' : 'block';
 }
 function goHome(){
   closePlayer();
